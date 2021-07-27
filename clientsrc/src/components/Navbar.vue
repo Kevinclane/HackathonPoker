@@ -1,6 +1,8 @@
 <template>
   <nav class="navbar navbar-expand-lg navbar-light bg-light">
-    <router-link class="navbar-brand" :to="{ name: 'home' }">Die Roller</router-link>
+    <router-link class="navbar-brand" :to="{ name: 'home' }"
+      >Die Roller</router-link
+    >
     <button
       class="navbar-toggler"
       type="button"
@@ -15,7 +17,9 @@
     <div class="collapse navbar-collapse" id="navbarText">
       <ul class="navbar-nav mr-auto">
         <li class="nav-item" :class="{ active: $route.name == 'home' }">
-          <router-link :to="{ name: 'home' }" class="nav-link">Home</router-link>
+          <router-link :to="{ name: 'home' }" class="nav-link"
+            >Home</router-link
+          >
         </li>
       </ul>
     </div>
@@ -23,19 +27,8 @@
 </template>
 
 <script>
-import axios from "axios";
-
-let _api = axios.create({
-  baseURL: "https://localhost:3000",
-  withCredentials: true,
-});
 export default {
   name: "Navbar",
-  data() {
-    return {
-      formNum: 1,
-    };
-  },
   methods: {
     async login() {
       await this.$auth.loginWithPopup();
