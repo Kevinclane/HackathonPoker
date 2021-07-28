@@ -1,15 +1,21 @@
 <template>
-  <div class="table button-type" @click="openModal"></div>
+  <div class="table button-type" @click="toTxLobby"></div>
 </template>
 
 <script>
 export default {
   name: "TxTableTile",
+  data() {
+    return {
+      showModal: false,
+    };
+  },
   methods: {
-    openModal() {
-      console.log("test");
+    toTxLobby() {
+      this.$router.push("txlobby");
     },
   },
+  components: {},
 };
 </script>
 
@@ -24,5 +30,14 @@ export default {
   height: 8vh;
   width: 8vw;
   /* margin-top: 25vh; */
+}
+.black-back {
+  background-color: rgba(0, 0, 0, 0.6);
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1;
 }
 </style>

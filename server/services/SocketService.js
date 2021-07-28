@@ -45,6 +45,10 @@ class SocketService {
     socket.leave(room);
   }
 
+  Test(socket, data) {
+    socket.emit(data)
+  }
+
   /**
    * Sends a direct message to a user
    * @param {string} userId
@@ -66,7 +70,6 @@ class SocketService {
       this._newConnection(socket);
 
       //STUB Register listeners
-
       socket.on("dispatch", this._onDispatch(socket));
       socket.on("disconnect", this._onDisconnect(socket));
     };

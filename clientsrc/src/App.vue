@@ -1,13 +1,13 @@
 <template>
   <div id="app">
-    <!-- <navbar /> -->
+    <user-g-u-i />
     <router-view />
   </div>
 </template>
 
 <script>
-// import Navbar from "./components/Navbar";
 import { onAuth } from "@bcwdev/auth0-vue";
+import UserGUI from "./components/UserGUI.vue";
 export default {
   name: "App",
   async beforeCreate() {
@@ -19,7 +19,7 @@ export default {
       this.$router.push({ name: "home" });
     }
   },
-  components: {},
+  components: { UserGUI },
 };
 </script>
 
@@ -38,5 +38,16 @@ export default {
 }
 .button-type {
   cursor: pointer;
+}
+.super-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.text-red {
+  color: red;
+}
+.bold {
+  font-weight: bold;
 }
 </style>

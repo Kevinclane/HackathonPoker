@@ -1,6 +1,6 @@
 <template>
   <div class="container-fluid floor wrapper-main border-main h-100">
-    <div class="row">
+    <!-- <div class="row">
       <div class="col-12">
         <div class="row h-20">
           <div class="col-12 my-3">Welcome {{ profile.name }}!</div>
@@ -8,22 +8,25 @@
           <div class="col-3 border-red">Profile Info</div>
         </div>
       </div>
-    </div>
-    <div class="row h-70 grid">
+    </div> -->
+    <div class="row h-100 w-100vw">
       <tile v-for="tile in Tiles" :key="tile.number" :tile="tile" />
     </div>
   </div>
 </template>
 
 <script>
-import Tile from "../components/Tile.vue";
+import Tile from "../components/flooring/Tile.vue";
 export default {
   name: "Dashboard",
   data() {
     return {
       Tiles: [],
-      RedTiles: [19, 20, 21, 22, 23, 24, 25, 26, 27, 32, 41, 50, 59],
-      TxTables: [28, 29, 30, 31],
+      RedTiles: [
+        6, 16, 26, 36, 46, 56, 66, 76, 86, 41, 42, 43, 44, 45, 46, 47, 48, 49,
+        50, 5, 15, 25, 35, 55, 65, 75, 85,
+      ],
+      TxTables: [51, 52, 53, 54],
     };
   },
   async mounted() {
@@ -40,9 +43,9 @@ export default {
     },
     generateTiles() {
       let i = 0;
-      while (i < 63) {
+      while (i < 90) {
         let tile = {
-          numer: i + 1,
+          number: i + 1,
         };
         tile.type = this.getTileType(i + 1);
         this.Tiles.push(tile);
@@ -72,12 +75,12 @@ export default {
 .wrapper-main {
   height: 100vh;
 }
-.border-main {
+/* .border-main {
   border-top: 5vh solid white;
   border-bottom: 5vh solid white;
   border-left: 5vw solid white;
   border-right: 5vw solid white;
-}
+} */
 .floor {
   background-image: url("../assets/Floor.jpg");
   background-size: 0.5vh;
@@ -87,6 +90,9 @@ export default {
 }
 .h-70 {
   height: 70vh;
+}
+.w-100vw {
+  width: 100vw;
 }
 .grid {
   /* height: ; */

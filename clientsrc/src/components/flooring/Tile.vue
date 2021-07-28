@@ -2,6 +2,7 @@
   <div class="box">
     <tx-table-tile v-if="tile.type == 'txTable'"> </tx-table-tile>
     <carpet v-if="tile.type == 'carpet'"></carpet>
+    <!-- {{ tile.number }} -->
   </div>
 </template>
 

@@ -7,10 +7,14 @@ const TexasHoldEm = new Schema(
     Cards: [{ type: Object }],
     CommunityCards: [{ type: Object }],
     Players: [{ type: ObjectId, ref: "Profile" }],
+    PlayersInRound: [{ type: ObjectId, ref: "Profile" }],
     PlayersTurn: { type: ObjectId, ref: "Profile" },
+    PlayersTableData: [{ type: ObjectId, ref: "PlayerTableData" }],
     Timer: { type: Number },
-    Pot: { type: Number },
-    CurrentBet: { type: Number }
+    TotalBets: [{ type: ObjectId, ref: "Bet" }],
+    TurnBets: [{ type: ObjectId, ref: "Bet" }],
+    BuyIn: { type: Number },
+    Number: { type: Number }
   },
   { timestamps: true, toJSON: { virtuals: true } }
 );

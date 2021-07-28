@@ -45,6 +45,7 @@
         <div class="seat super-center">6</div>
       </div>
     </div>
+    <button @click="test">test</button>
   </div>
 </template>
 
@@ -56,12 +57,24 @@ export default {
       communityCards: [],
     };
   },
+  async mounted() {
+    await this.$store.dispatch("initializeSocket");
+    this.$store.dispatch("joinRoom", this.$route.params.tableId);
+  },
+  beforedestry() {
+    this.$store.dispatch("leaveRoom", this.$route.params.jobId);
+  },
+  methods: {
+    test() {
+      this.$store.dispatch("test");
+    },
+  },
 };
 </script>
 
 <style scoped>
 .wrapper-main {
-  height: 100vh;
+  height: 95vh;
   background-color: whitesmoke;
 }
 .floor {
@@ -85,18 +98,14 @@ export default {
 .seating-area {
   padding-top: 4vh;
   padding-bottom: 4vh;
-  border: 4px solid cyan;
+  /* border: 4px solid cyan; */
 }
-.super-center {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
+
 .card-board {
   height: 10.5vh;
   width: 7.5vh;
-  margin-left: 2vw;
-  margin-right: 2vw;
+  margin-left: 1vw;
+  margin-right: 1vw;
 }
 .dotted-border {
   border: 2px dotted white;
