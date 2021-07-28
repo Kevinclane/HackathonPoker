@@ -11,13 +11,13 @@ import { onAuth } from "@bcwdev/auth0-vue";
 export default {
   name: "App",
   async beforeCreate() {
-    // try {
-    //   await onAuth();
-    //   this.$store.dispatch("setBearer", this.$auth.bearer);
-    //   this.$store.dispatch("getProfile");
-    // } catch (err) {
-    //   this.$router.push({ name: "home" });
-    // }
+    try {
+      await onAuth();
+      this.$store.dispatch("setBearer", this.$auth.bearer);
+      this.$store.dispatch("getProfile");
+    } catch (err) {
+      this.$router.push({ name: "home" });
+    }
   },
   components: {},
 };
@@ -35,5 +35,8 @@ export default {
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
   color: #2c3e50;
+}
+.button-type {
+  cursor: pointer;
 }
 </style>

@@ -5,6 +5,13 @@
       Logout
     </button>
     <button class="btn btn-success" v-else @click="login">Login</button>
+    <button
+      class="btn btn-info"
+      v-if="$auth.isAuthenticated"
+      @click="toDashboard"
+    >
+      To Dashboard
+    </button>
   </div>
 </template>
 
@@ -19,11 +26,15 @@ export default {
   methods: {
     async login() {
       await this.$auth.loginWithRedirect();
+      debugger;
       await this.$store.dispatch("setBearer", this.$auth.bearer);
-      this.$router.push("dashboard");
+      await this.$store.dispatch("getProfile");
     },
     async logout() {
       await this.$auth.logout({ returnTo: window.location.origin });
+    },
+    toDashboard() {
+      this.$router.push("dashboard");
     },
   },
   components: {},

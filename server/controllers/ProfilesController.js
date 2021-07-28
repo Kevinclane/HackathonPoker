@@ -1,4 +1,3 @@
-import express from "express";
 import BaseController from "../utils/BaseController";
 import auth0provider from "@bcwdev/auth0provider";
 import { profilesService } from "../services/ProfilesService";

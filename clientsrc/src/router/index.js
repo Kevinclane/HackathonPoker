@@ -18,12 +18,14 @@ export default new Router({
     {
       path: "/dashboard",
       name: 'dashboard',
-      component: Dashboard
+      component: Dashboard,
+      beforeEnter: authGuard
     },
     {
       path: "/texasholdemTable",
       name: 'texasholdemTable',
-      component: TexasHoldEmTable
+      component: TexasHoldEmTable,
+      beforeEnter: authGuard
     },
     {
       path: "*",
