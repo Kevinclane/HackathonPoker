@@ -32,6 +32,11 @@ export default new Vuex.Store({
     resetBearer() {
       api.defaults.headers.authorization = "";
     },
+
+
+    //#region ProfileStuff
+
+
     async getProfile({ commit }) {
       try {
         let res = await api.get("/profile")
@@ -40,15 +45,12 @@ export default new Vuex.Store({
         console.error(err)
       }
     },
-    async createTable({ commit }, table) {
-      try {
-        let res = await api.post("/texasholdem/createtable")
-        commit("setActiveTable", res.data)
-        this.$router.push('texasholdemtable/' + res.data.id)
-      } catch (error) {
-        console.error(error)
-      }
-    },
+
+
+    //#endregion ProfileStuff
+
+    //#region TxTables
+
     async getTXTables({ commit }) {
       try {
         let res = await api.get("/texasholdem/gettables")
@@ -57,6 +59,17 @@ export default new Vuex.Store({
         console.error(error)
       }
     },
+    async joinTable({ commit }, tableId) {
+      try {
+        let res = await api.put("texasholdem/jointable/" + tableId)
+        commit("setActiveTable", res.data)
+      } catch (error) {
+        console.error(error)
+      }
+    },
+
+    //#endregion TxTables
+
     async test({ }) {
       try {
         // debugger
@@ -65,6 +78,9 @@ export default new Vuex.Store({
         console.error(error)
       }
     },
+
+
+
 
     initializeSocket({ commit, dispatch }) {
       //establish connection with socket
@@ -82,6 +98,12 @@ export default new Vuex.Store({
         console.log(data)
         // this.dispatch("getComments", comment.jobId);
       });
+
+      socket.on("UserJoined", (id) => {
+        //get the user
+        console.log(id)
+      })
+
     },
 
 
@@ -92,6 +114,7 @@ export default new Vuex.Store({
 
     joinRoom({ commit, dispatch }, roomName) {
       socket.emit("dispatch", { action: "JoinRoom", data: roomName });
+      dispatch("joinTable", roomName)
     },
     leaveRoom({ commit, dispatch }, roomName) {
       socket.emit("dispatch", { action: "LeaveRoom", data: roomName });

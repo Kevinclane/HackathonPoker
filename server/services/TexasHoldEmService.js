@@ -15,6 +15,15 @@ class TexasHoldEmService {
   async dealHands() {
 
   }
+  async joinTable(tableId, user) {
+    if (user.id == null) {
+      throw new BadRequest("Cannot add null userId")
+    }
+    await dbContext.TexasHoldEm.findByIdAndUpdate(
+      { _id: tableId },
+      { $addToSet: { Players: user.id } }
+    )
+  }
 }
 
 export const texasHoldEmService = new TexasHoldEmService();

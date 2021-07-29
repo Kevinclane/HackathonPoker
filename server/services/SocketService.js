@@ -36,7 +36,6 @@ class SocketService {
    * @param {string} room
    */
   JoinRoom(socket, room) {
-
     socket.join(room);
   }
   /**
@@ -44,7 +43,6 @@ class SocketService {
    * @param {string} room
    */
   LeaveRoom(socket, room) {
-
     socket.leave(room);
   }
   /**

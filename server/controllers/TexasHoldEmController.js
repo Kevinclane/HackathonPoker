@@ -9,6 +9,7 @@ export class TexasHoldEmController extends BaseController {
       .post("/createtable", this.createTable)
       .use(auth0provider.getAuthorizedUserInfo)
       .get("/gettables", this.getAllTables)
+      .put("/jointable/:id", this.joinTable)
   }
   async createTable(req, res, next) {
     try {
@@ -22,6 +23,14 @@ export class TexasHoldEmController extends BaseController {
     try {
       let tables = await texasHoldEmService.getAllTables()
       res.send(tables)
+    } catch (error) {
+      next(error)
+    }
+  }
+  async joinTable(req, res, next) {
+    try {
+      let table = await texasHoldEmService.joinTable(req.params.id, req.userInfo)
+      res.send(table)
     } catch (error) {
       next(error)
     }
