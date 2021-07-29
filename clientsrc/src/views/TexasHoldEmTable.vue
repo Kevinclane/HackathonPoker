@@ -61,7 +61,7 @@ export default {
     await this.$store.dispatch("initializeSocket");
     this.$store.dispatch("joinRoom", this.$route.params.tableId);
   },
-  beforedestry() {
+  beforedestroy() {
     this.$store.dispatch("leaveRoom", this.$route.params.jobId);
   },
   methods: {

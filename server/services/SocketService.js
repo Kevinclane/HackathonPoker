@@ -1,5 +1,6 @@
 import SocketIO from "socket.io";
 import auth0provider from "@bcwdev/auth0provider";
+import { texasHoldEmService } from "./TexasHoldEmService";
 class SocketService {
   io = SocketIO();
   /**
@@ -35,6 +36,7 @@ class SocketService {
    * @param {string} room
    */
   JoinRoom(socket, room) {
+
     socket.join(room);
   }
   /**
@@ -42,13 +44,9 @@ class SocketService {
    * @param {string} room
    */
   LeaveRoom(socket, room) {
+
     socket.leave(room);
   }
-
-  Test(socket, data) {
-    socket.emit(data)
-  }
-
   /**
    * Sends a direct message to a user
    * @param {string} userId
@@ -72,7 +70,32 @@ class SocketService {
       //STUB Register listeners
       socket.on("dispatch", this._onDispatch(socket));
       socket.on("disconnect", this._onDisconnect(socket));
+      socket.on("texasholdem", this._texasHoldEmRouter(socket));
     };
+  }
+
+  _texasHoldEmRouter(socket) {
+    return (req) => {
+      try {
+        switch (req.action) {
+          case "start":
+            this._startGame(req.body, socket)
+            break
+        }
+        // this.io.emit("Test", req.data)
+      } catch (error) {
+        console.error(error)
+      }
+    }
+  }
+
+  async _startGame(data, socket) {
+    try {
+      await texasHoldEmService.dealHands(socket)
+      this.io.emit("StartGame")
+    } catch (error) {
+      console.error(error)
+    }
   }
 
   _onDisconnect(socket) {

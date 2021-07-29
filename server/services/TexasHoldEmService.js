@@ -12,6 +12,9 @@ class TexasHoldEmService {
     let tables = await dbContext.TexasHoldEm.find()
     return tables
   }
+  async dealHands() {
+
+  }
 }
 
 export const texasHoldEmService = new TexasHoldEmService();

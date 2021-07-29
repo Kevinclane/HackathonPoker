@@ -79,14 +79,17 @@ export default new Vuex.Store({
 
       socket.on("Test", (data) => {
         // commit("setNewComment", data);
-        debugger
         console.log(data)
         // this.dispatch("getComments", comment.jobId);
       });
     },
+
+
     test({ }) {
-      socket.emit("dispatch", { action: "Test", data: "Test" })
+      socket.emit("texasholdem", { action: "start", body: "Test" })
     },
+
+
     joinRoom({ commit, dispatch }, roomName) {
       socket.emit("dispatch", { action: "JoinRoom", data: roomName });
     },
