@@ -53,18 +53,58 @@ class TexasHoldEmService {
     if (!profile) {
       throw new BadRequest("Cannot add null userId")
     }
-    let table = await dbContext.TexasHoldEm.findByIdAndUpdate(
-      { _id: tableId },
-      { $addToSet: { PlayersWatching: profile.id } }
-    ).populate({
+    let table = await dbContext.TexasHoldEm.findById(tableId).populate({
       path: "Seats",
       populate: {
         path: "Player",
         populate: {
-          path: "Player"
+          path: "Player",
+          populate: {
+            path: "Cards"
+          }
         }
       }
     }).populate("TotalBets").populate("TurnBets")
+
+    let seated = false
+    let i = 0
+    while (i < table.Seats.length) {
+      if (table.Seats[i].Player) {
+        if (table.Seats[i].Player.Player._id == profile._id) {
+          seated = true
+        }
+      }
+      i++
+    }
+
+    if (!seated) {
+      table = await dbContext.TexasHoldEm.findByIdAndUpdate(
+        { _id: tableId },
+        { $addToSet: { PlayersWatching: profile.id } }
+      ).populate({
+        path: "Seats",
+        populate: {
+          path: "Player",
+          populate: {
+            path: "Player",
+            populate: {
+              path: "Cards"
+            }
+          }
+        }
+      }).populate("TotalBets").populate("TurnBets")
+    }
+
+    i = 0
+    while (i < table.Seats.length) {
+      if (table.Seats[i].Player) {
+        if (table.Seats[i].Player.Player._id != profile._id) {
+          table.Seats[i].Player.Cards = []
+        }
+      }
+      i++
+    }
+
     table.Deck = []
     return table
   }
@@ -97,6 +137,8 @@ class TexasHoldEmService {
     }
     return true
   }
+
+  //might be able to cut out the populates here and just have all of the players call a get request for seats. 
   async sit(tableId, user, data) {
     let profile = await dbContext.Profile.findOne({ email: user.email })
     if (!profile) {

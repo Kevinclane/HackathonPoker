@@ -1,26 +1,14 @@
 <template>
   <div class="container-fluid wrapper-main floor">
     <div class="row seating-area d-flex justify-content-around">
-      <div class="col-2 super-center mb-3">
-        <seat
-          class="seat super-center"
-          :seat="table.Seats[0]"
-          :BuyIn="table.BuyIn"
-        />
+      <div class="col-3 mb-3">
+        <seat class="" :seat="table.Seats[0]" :BuyIn="table.BuyIn" />
       </div>
-      <div class="col-2 super-center mb-3">
-        <seat
-          class="seat super-center"
-          :seat="table.Seats[1]"
-          :BuyIn="table.BuyIn"
-        />
+      <div class="col-3 mb-3">
+        <seat class="" :seat="table.Seats[1]" :BuyIn="table.BuyIn" />
       </div>
-      <div class="col-2 super-center mb-3">
-        <seat
-          class="seat super-center"
-          :seat="table.Seats[2]"
-          :BuyIn="table.BuyIn"
-        />
+      <div class="col-3 mb-3">
+        <seat class="" :seat="table.Seats[2]" :BuyIn="table.BuyIn" />
       </div>
       <div class="col-12">
         <div class="row">
@@ -47,26 +35,14 @@
           </div>
         </div>
       </div>
-      <div class="col-2 super-center mt-3">
-        <seat
-          class="seat super-center"
-          :seat="table.Seats[3]"
-          :BuyIn="table.BuyIn"
-        />
+      <div class="col-3 mt-3">
+        <seat class="" :seat="table.Seats[3]" :BuyIn="table.BuyIn" />
       </div>
-      <div class="col-2 super-center mt-3">
-        <seat
-          class="seat super-center"
-          :seat="table.Seats[4]"
-          :BuyIn="table.BuyIn"
-        />
+      <div class="col-3 mt-3">
+        <seat class="" :seat="table.Seats[4]" :BuyIn="table.BuyIn" />
       </div>
-      <div class="col-2 super-center mt-3">
-        <seat
-          class="seat super-center"
-          :seat="table.Seats[5]"
-          :BuyIn="table.BuyIn"
-        />
+      <div class="col-3 mt-3">
+        <seat class="" :seat="table.Seats[5]" :BuyIn="table.BuyIn" />
       </div>
     </div>
   </div>
@@ -118,7 +94,8 @@ export default {
   /* margin-top: 25vh; */
 }
 .seat {
-  border: 2px solid red;
+  /* border: 2px solid red; */
+  border: 2px dotted white;
   border-radius: 50%;
   height: 10vh;
   width: 10vh;
