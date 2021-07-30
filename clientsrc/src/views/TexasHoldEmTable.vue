@@ -2,13 +2,25 @@
   <div class="container-fluid wrapper-main floor">
     <div class="row seating-area d-flex justify-content-around">
       <div class="col-2 super-center mb-3">
-        <div class="seat super-center">1</div>
+        <seat
+          class="seat super-center"
+          :seat="table.Seats[0]"
+          :BuyIn="table.BuyIn"
+        />
       </div>
       <div class="col-2 super-center mb-3">
-        <div class="seat super-center">2</div>
+        <seat
+          class="seat super-center"
+          :seat="table.Seats[1]"
+          :BuyIn="table.BuyIn"
+        />
       </div>
       <div class="col-2 super-center mb-3">
-        <div class="seat super-center">3</div>
+        <seat
+          class="seat super-center"
+          :seat="table.Seats[2]"
+          :BuyIn="table.BuyIn"
+        />
       </div>
       <div class="col-12">
         <div class="row">
@@ -36,20 +48,32 @@
         </div>
       </div>
       <div class="col-2 super-center mt-3">
-        <div class="seat super-center">4</div>
+        <seat
+          class="seat super-center"
+          :seat="table.Seats[3]"
+          :BuyIn="table.BuyIn"
+        />
       </div>
       <div class="col-2 super-center mt-3">
-        <div class="seat super-center">5</div>
+        <seat
+          class="seat super-center"
+          :seat="table.Seats[4]"
+          :BuyIn="table.BuyIn"
+        />
       </div>
       <div class="col-2 super-center mt-3">
-        <div class="seat super-center">6</div>
+        <seat
+          class="seat super-center"
+          :seat="table.Seats[5]"
+          :BuyIn="table.BuyIn"
+        />
       </div>
     </div>
-    <button @click="test">test</button>
   </div>
 </template>
 
 <script>
+import Seat from "../components/Seat.vue";
 export default {
   name: "TexasHoldEmTable",
   data() {
@@ -59,15 +83,19 @@ export default {
   },
   async mounted() {
     await this.$store.dispatch("initializeSocket");
-    this.$store.dispatch("joinRoom", this.$route.params.tableId);
+    await this.$store.dispatch("joinRoom", this.$route.params.tableId);
   },
   beforedestroy() {
-    this.$store.dispatch("leaveRoom", this.$route.params.jobId);
+    this.$store.dispatch("leaveRoom", this.$route.params.tableId);
   },
-  methods: {
-    test() {
-      this.$store.dispatch("test");
+  computed: {
+    table() {
+      return this.$store.state.activeTable;
     },
+  },
+  methods: {},
+  components: {
+    Seat,
   },
 };
 </script>

@@ -4,8 +4,8 @@ let ObjectId = Schema.Types.ObjectId;
 
 const Seat = new Schema(
   {
-    Player: { type: ObjectId, ref: "Profile" },
-    Wallet: { type: Number },
+    TableId: { type: ObjectId, ref: "TexasHoldEm" },
+    Player: { type: ObjectId, ref: "PlayerTableData" },
     Position: { type: Number }
   }
 )

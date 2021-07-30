@@ -45,7 +45,7 @@
       >
         <div class="col-2">{{ table.Number }}</div>
         <div class="col-6">${{ table.BuyIn }}</div>
-        <div class="col-2">{{ table.Players.length }}</div>
+        <div class="col-2">{{ table.PlayersAtTable.length }}</div>
         <div class="col-2">
           <button class="btn btn-sm btn-success" @click="joinTable(table.id)">
             Join

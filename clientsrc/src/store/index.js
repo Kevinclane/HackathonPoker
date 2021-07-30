@@ -12,7 +12,8 @@ export default new Vuex.Store({
   state: {
     user: {},
     tables: [],
-    activeTable: {}
+    activeTable: {},
+    hand: []
   },
   mutations: {
     setUser(state, user) {
@@ -23,6 +24,28 @@ export default new Vuex.Store({
     },
     setTables(state, tables) {
       state.tables = tables
+    },
+    setHand(state, cards) {
+      state.hand = cards
+    },
+    setSeats(state, seats) {
+      state.activeTable.Seats = seats
+    },
+    playerLeft(state, _id) {
+      state.activeTable
+      let i = table.Seats.findIndex(s => s.Player.Player._id == profile._id)
+      if (i != -1) {
+        table.Seats[i].Player = null
+      }
+      if (table.PlayersWatching.includes(profile.id)) {
+        i = table.PlayersWatching.findIndex(p => p.id == id)
+        table.PlayersWatching.splice(i, 1)
+      }
+      if (table.PlayersAtTable.includes(profile.id)) {
+        i = table.PlayersAtTable.findIndex(p => p.id == id)
+        table.PlayersAtTable.splice(i, 1)
+      }
+      state.activeTable = table
     }
   },
   actions: {
@@ -49,6 +72,19 @@ export default new Vuex.Store({
 
     //#endregion ProfileStuff
 
+    //#region Potentially reusable functions for games
+
+    async getHand({ commit }, id) {
+      try {
+        let res = await api.get("/cards/gethand/" + id)
+        commit("setHand", res.data.Cards)
+      } catch (error) {
+        console.error(error)
+      }
+    },
+
+    //#endregion  End Potential
+
     //#region TxTables
 
     async getTXTables({ commit }) {
@@ -59,26 +95,57 @@ export default new Vuex.Store({
         console.error(error)
       }
     },
-    async joinTable({ commit }, tableId) {
+    async joinTable({ commit, dispatch }, tableId) {
       try {
-        let res = await api.put("texasholdem/jointable/" + tableId)
+        let res = await api.put("/texasholdem/jointable/" + tableId)
+        if (res.data.PlayersAtTable.length > 1 && !res.data.Active) {
+          socket.emit("texasholdem", {
+            action: "startGame", body: {
+              tableId: tableId
+            }
+          })
+        }
         commit("setActiveTable", res.data)
       } catch (error) {
         console.error(error)
       }
     },
-
-    //#endregion TxTables
-
-    async test({ }) {
+    async leaveTable({ commit }, tableId) {
       try {
-        // debugger
-        socket.emit("dispatch", "a test message")
+        let res = await api.put("texasholdem/leavetable/" + tableId)
+        if (res.data) {
+          this.io.emit("texasholdem", {
+            action: "playerLeft",
+            body: {
+              playerId: res.data
+            }
+          })
+        }
       } catch (error) {
         console.error(error)
       }
     },
-
+    async sit({ commit }, reqObj) {
+      try {
+        let res = await api.put("/texasholdem/sit/" + reqObj.tableId, reqObj)
+        socket.emit("texasholdem", {
+          action: "getSeats", body: {
+            tableId: reqObj.tableId
+          }
+        })
+      } catch (error) {
+        console.error(error)
+      }
+    },
+    async getSeats({ commit }, id) {
+      try {
+        let res = await api.get("/texasholdem/getseats/" + id)
+        commit("setSeats", res.data)
+      } catch (error) {
+        console.error(error)
+      }
+    },
+    //#endregion TxTables
 
 
 
@@ -93,24 +160,22 @@ export default new Vuex.Store({
         console.log(data.message)
       });
 
-      socket.on("Test", (data) => {
-        // commit("setNewComment", data);
-        console.log(data)
-        // this.dispatch("getComments", comment.jobId);
-      });
 
-      socket.on("UserJoined", (id) => {
-        //get the user
-        console.log(id)
+      //May want to have this share the turn timer plus whatever other data is needed to start the game. Users have to get their hands themselves for security reasons
+      socket.on("StartGame", (data) => {
+        dispatch("getHand", data.tableId)
+        console.log(data)
+      });
+      socket.on("GetSeats", (id) => {
+        dispatch("getSeats", id)
+        console.log("Seat: seat")
+      })
+      socket.on("PlayerLeft", (id) => {
+        commit("playerLeft", id)
       })
 
+
     },
-
-
-    test({ }) {
-      socket.emit("texasholdem", { action: "start", body: "Test" })
-    },
-
 
     joinRoom({ commit, dispatch }, roomName) {
       socket.emit("dispatch", { action: "JoinRoom", data: roomName });
@@ -118,6 +183,7 @@ export default new Vuex.Store({
     },
     leaveRoom({ commit, dispatch }, roomName) {
       socket.emit("dispatch", { action: "LeaveRoom", data: roomName });
+      dispatch("leaveTable", roomName)
     },
   }
 })

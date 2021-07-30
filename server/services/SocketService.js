@@ -76,9 +76,14 @@ class SocketService {
     return (req) => {
       try {
         switch (req.action) {
-          case "start":
+          case "startGame":
             this._startGame(req.body, socket)
             break
+          case "getSeats":
+            this._getSeats(req.body, socket)
+            break
+          case "playerLeft":
+            this._playerLeft(req.body, socket)
         }
         // this.io.emit("Test", req.data)
       } catch (error) {
@@ -89,8 +94,24 @@ class SocketService {
 
   async _startGame(data, socket) {
     try {
-      await texasHoldEmService.dealHands(socket)
-      this.io.emit("StartGame")
+      await texasHoldEmService.dealHands(data.tableId)
+      this.io.emit("StartGame", data.tableId)
+    } catch (error) {
+      console.error(error)
+    }
+  }
+
+  async _getSeats(data) {
+    try {
+      this.io.emit("GetSeats", data.tableId)
+    } catch (error) {
+      console.error(error)
+    }
+  }
+
+  async __playerLeft(data, socket) {
+    try {
+      this.io.emit("PlayerLeft", data.playerId)
     } catch (error) {
       console.error(error)
     }
