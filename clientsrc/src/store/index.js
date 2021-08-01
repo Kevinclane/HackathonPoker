@@ -30,6 +30,16 @@ export default new Vuex.Store({
     },
     setSeats(state, seats) {
       state.activeTable.Seats = seats
+      let i = 0
+      debugger
+      while (i < seats.length) {
+        if (seats[i].Player) {
+          if (seats[i].Player.Cards.length > 0) {
+            state.hand = seats[i].Player.Cards
+          }
+        }
+        i++
+      }
     },
     playerLeft(state, _id) {
       state.activeTable
@@ -72,18 +82,6 @@ export default new Vuex.Store({
 
     //#endregion ProfileStuff
 
-    //#region Potentially reusable functions for games
-
-    async getHand({ commit }, id) {
-      try {
-        let res = await api.get("/cards/gethand/" + id)
-        commit("setHand", res.data.Cards)
-      } catch (error) {
-        console.error(error)
-      }
-    },
-
-    //#endregion  End Potential
 
     //#region TxTables
 
@@ -98,13 +96,7 @@ export default new Vuex.Store({
     async joinTable({ commit, dispatch }, tableId) {
       try {
         let res = await api.put("/texasholdem/jointable/" + tableId)
-        if (res.data.PlayersAtTable.length > 1 && !res.data.Active) {
-          socket.emit("texasholdem", {
-            action: "startGame", body: {
-              tableId: tableId
-            }
-          })
-        }
+        // debugger
         commit("setActiveTable", res.data)
       } catch (error) {
         console.error(error)
@@ -128,6 +120,7 @@ export default new Vuex.Store({
     async sit({ commit }, reqObj) {
       try {
         let res = await api.put("/texasholdem/sit/" + reqObj.tableId, reqObj)
+
         socket.emit("texasholdem", {
           action: "getSeats", body: {
             tableId: reqObj.tableId
@@ -160,11 +153,8 @@ export default new Vuex.Store({
         console.log(data.message)
       });
 
-
-      //May want to have this share the turn timer plus whatever other data is needed to start the game. Users have to get their hands themselves for security reasons
-      socket.on("StartGame", (data) => {
-        dispatch("getHand", data.tableId)
-        console.log(data)
+      socket.on("StartGame", (tableId) => {
+        dispatch("joinTable", tableId)
       });
       socket.on("GetSeats", (id) => {
         dispatch("getSeats", id)
@@ -173,7 +163,9 @@ export default new Vuex.Store({
       socket.on("PlayerLeft", (id) => {
         commit("playerLeft", id)
       })
-
+      socket.on("Test", (msg) => {
+        console.log("Test message: ", msg)
+      })
 
     },
 

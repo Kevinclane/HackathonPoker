@@ -68,6 +68,9 @@ export default {
         } else return false;
       } else return false;
     },
+    hand() {
+      return this.$store.state.hand;
+    },
   },
   methods: {
     promptJoin() {

@@ -1,6 +1,7 @@
 import { dbContext } from "../db/DbContext";
 import { BadRequest } from "../utils/Errors";
 import { cardsService } from "./CardsService"
+import { gameTickerService } from "./GameTickerService";
 
 class TexasHoldEmService {
   async createTable(table) {
@@ -17,13 +18,13 @@ class TexasHoldEmService {
     let newTable = await dbContext.TexasHoldEm.create(table)
     i = 0
     while (i < newTable.Seats.length) {
-      newTable.Seats[i].TableId = newTable.id
-      newTable.Seats[i] = await dbContext.Seat.findByIdAndUpdate(newTable.Seats[i].id,
-        { TableId: newTable.id },
+      newTable.Seats[i].TableId = newTable._id
+      newTable.Seats[i] = await dbContext.Seat.findByIdAndUpdate(newTable.Seats[i]._id,
+        { TableId: newTable._id },
         { new: true })
       i++
     }
-    newTable = await dbContext.TexasHoldEm.findByIdAndUpdate(newTable.id, newTable, { new: true }).populate("Seats")
+    newTable = await dbContext.TexasHoldEm.findByIdAndUpdate(newTable._id, newTable, { new: true }).populate("Seats")
     return newTable
   }
   async getAllTables() {
@@ -36,17 +37,26 @@ class TexasHoldEmService {
     return tables
   }
   async dealHands(tableId) {
-    let table = await dbContext.TexasHoldEm.findById(tableId)
+    let table = await dbContext.TexasHoldEm.findById(tableId).populate({
+      path: "Seats",
+      populate: {
+        path: "Player",
+        populate: {
+          path: "Player"
+        }
+      }
+    })
     let i = 0
     while (i < table.Seats.length) {
       if (table.Seats[i].Player) {
         let data = await cardsService.drawFromDeck(table.Deck, 2)
         table.Deck = data.Deck
-
+        await dbContext.PlayerTableData.findByIdAndUpdate(table.Seats[i].Player._id,
+          { Cards: data.cards })
       }
       i++
     }
-    table = await dbContext.findByIdAndUpdate(table.id, table, { new: true })
+    table = await dbContext.TexasHoldEm.findByIdAndUpdate(table._id, table)
   }
   async joinTable(tableId, user) {
     let profile = await dbContext.Profile.findOne({ email: user.email })
@@ -58,47 +68,32 @@ class TexasHoldEmService {
       populate: {
         path: "Player",
         populate: {
-          path: "Player",
-          populate: {
-            path: "Cards"
-          }
+          path: "Player"
         }
       }
     }).populate("TotalBets").populate("TurnBets")
 
-    let seated = false
-    let i = 0
-    while (i < table.Seats.length) {
-      if (table.Seats[i].Player) {
-        if (table.Seats[i].Player.Player._id == profile._id) {
-          seated = true
-        }
-      }
-      i++
-    }
-
-    if (!seated) {
+    if (!table.PlayersAtTable.includes(profile._id)) {
       table = await dbContext.TexasHoldEm.findByIdAndUpdate(
         { _id: tableId },
-        { $addToSet: { PlayersWatching: profile.id } }
+        { $addToSet: { PlayersWatching: profile._id } }
       ).populate({
         path: "Seats",
         populate: {
           path: "Player",
           populate: {
-            path: "Player",
-            populate: {
-              path: "Cards"
-            }
+            path: "Player"
           }
         }
       }).populate("TotalBets").populate("TurnBets")
     }
 
-    i = 0
+    let i = 0
     while (i < table.Seats.length) {
       if (table.Seats[i].Player) {
-        if (table.Seats[i].Player.Player._id != profile._id) {
+        if (table.Seats[i].Player.Player == profile._id) {
+          table.Seats[i].Player = await table.Seats[i].Player.populate("Cards").execPopulate()
+        } else {
           table.Seats[i].Player.Cards = []
         }
       }
@@ -121,19 +116,19 @@ class TexasHoldEmService {
       }
     }).populate("TotalBets").populate("TurnBets")
     //TODO handle money stuff here after leaving 
-    let i = table.Seats.findIndex(s => s.Player.Player.id == profile.id)
+    let i = table.Seats.findIndex(s => s.Player.Player._id == profile._id)
     if (i != -1) {
-      await dbContext.Seat.findByIdAndUpdate(table.Seats[i].id,
+      await dbContext.Seat.findByIdAndUpdate(table.Seats[i]._id,
         { Player: null }
       )
     }
-    if (table.PlayersWatching.includes(profile.id)) {
+    if (table.PlayersWatching.includes(profile._id)) {
       await dbContext.TexasHoldEm.findByIdAndUpdate(tableId,
-        { $pull: { PlayersWatching: profile.id } })
+        { $pull: { PlayersWatching: profile._id } })
     }
-    if (table.PlayersAtTable.includes(profile.id)) {
+    if (table.PlayersAtTable.includes(profile._id)) {
       await dbContext.TexasHoldEm.findByIdAndUpdate(tableId,
-        { $pull: { PlayersAtTable: profile.id } })
+        { $pull: { PlayersAtTable: profile._id } })
     }
     return true
   }
@@ -146,7 +141,7 @@ class TexasHoldEmService {
     }
     let playerTableData = await dbContext.PlayerTableData.create({
       TableId: tableId,
-      Player: profile.id,
+      Player: profile._id,
       Wallet: data.buyIn
     })
 
@@ -155,23 +150,38 @@ class TexasHoldEmService {
       Position: data.position
     }).populate("Player")
     if (seat.Player == null) {
-      seat = await dbContext.Seat.findByIdAndUpdate(seat.id,
-        { Player: playerTableData.id },
+      seat = await dbContext.Seat.findByIdAndUpdate(seat._id,
+        { Player: playerTableData._id },
         { new: true }).populate({
           path: "Player",
           populate: {
-            path: "Player",
-            populate: {
-              path: "Cards"
-            }
+            path: "Player"
           }
         })
     }
-    await dbContext.TexasHoldEm.findByIdAndUpdate(
+    let table = await dbContext.TexasHoldEm.findByIdAndUpdate(
       { _id: tableId },
-      { $pull: { PlayersWatching: profile.id } }
+      {
+        $pull: { PlayersWatching: profile._id },
+        $addToSet: { PlayersAtTable: profile._id }
+      },
+      { new: true }
     )
-    return seat
+
+    let startGame = false
+    if (table.PlayersAtTable.length > 1 && !table.Active) {
+      table.Active = true;
+      if (table.Seats[0])
+        // table.PlayersTurn = table.Seat[0].findOne(p =>)
+        //set playersturn
+        //call drawCards
+        startGame = true
+      //this bool will tell the client to emit a getGame type of call
+      //set timer
+      this.gameTicker(table)
+    }
+
+    return { seat, startGame }
   }
 
   async stand() {
@@ -182,17 +192,16 @@ class TexasHoldEmService {
     let seats = await dbContext.Seat.find({ TableId: tableId }).populate({
       path: "Player",
       populate: {
-        path: "Player",
-        populate: {
-          path: "Cards"
-        }
+        path: "Player"
       }
     })
 
     let i = 0
     while (i < seats.length) {
       if (seats[i].Player) {
-        if (seats[i].Player.Player._id != profile._id) {
+        if (seats[i].Player.Player == profile._id) {
+          seats[i].Player = seats[i].Player.populate("Cards").execPopulate()
+        } else {
           seats[i].Player.Cards = []
         }
       }
@@ -200,6 +209,11 @@ class TexasHoldEmService {
     }
     return seats
   }
+
+  async gameTicker(table) {
+
+  }
+
 }
 
 export const texasHoldEmService = new TexasHoldEmService();

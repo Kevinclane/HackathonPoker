@@ -1,6 +1,13 @@
 import SocketIO from "socket.io";
 import auth0provider from "@bcwdev/auth0provider";
 import { texasHoldEmService } from "./TexasHoldEmService";
+import { gameTickerService } from "./GameTickerService";
+import { dbContext } from "../db/DbContext";
+
+
+let state = {
+
+}
 class SocketService {
   io = SocketIO();
   /**
@@ -11,6 +18,7 @@ class SocketService {
       this.io = io;
       //Server listeners
       io.on("connection", this._onConnect());
+      this._gameTicker()
     } catch (e) {
       console.error("[SOCKETSTORE ERROR]", e);
     }
@@ -36,6 +44,7 @@ class SocketService {
    * @param {string} room
    */
   JoinRoom(socket, room) {
+    this._gameTicker(room)
     socket.join(room);
   }
   /**
@@ -72,28 +81,79 @@ class SocketService {
     };
   }
 
+
   _texasHoldEmRouter(socket) {
     return (req) => {
       try {
         switch (req.action) {
-          case "startGame":
-            this._startGame(req.body, socket)
-            break
           case "getSeats":
             this._getSeats(req.body, socket)
             break
           case "playerLeft":
             this._playerLeft(req.body, socket)
+            break
         }
-        // this.io.emit("Test", req.data)
       } catch (error) {
         console.error(error)
       }
     }
   }
 
+  async _gameTicker() {
+    setInterval(() => {
+      this._healthChecker()
+      console.log("Game ticker")
+    }, 10000)
+  }
+
+  async _healthChecker() {
+    let healthCheck = await gameTickerService.statusCheck()
+
+
+    if (healthCheck.Status == "Dead") {
+      // terminated = true
+      // gameBotRunning = false
+      setTimeout(() => {
+        this.handeTask(healthCheck)
+      }, 10000)
+    } else {
+
+      switch (healthCheck.Table.LifeStage) {
+        case "Start":
+          //
+          break;
+        case "Round1":
+          // check table.playersturn to local var 
+          //change to next taken seat if ==
+          break;
+        case "Round2":
+          //
+          break;
+        case "Round3":
+          //
+          break;
+        case "End":
+          //
+          break;
+      }
+
+      if (healthCheck.LifeStage == "Start") {
+
+      } else if (healthCheck.LifeStage == "Round1") {
+
+      }
+      setTimeout(() => {
+        this.handeTask(healthCheck)
+      }, 10000)
+    }
+  }
+
   async _startGame(data, socket) {
     try {
+      if (gameBot == null) {
+        gameBot = "Active"
+        gameTickerService.startUp
+      }
       await texasHoldEmService.dealHands(data.tableId)
       this.io.emit("StartGame", data.tableId)
     } catch (error) {

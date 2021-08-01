@@ -57,8 +57,8 @@ export class TexasHoldEmController extends BaseController {
   }
   async sit(req, res, next) {
     try {
-      let seat = await texasHoldEmService.sit(req.params.id, req.userInfo, req.body)
-      res.send(seat)
+      let data = await texasHoldEmService.sit(req.params.id, req.userInfo, req.body)
+      res.send(data)
     } catch (error) {
       next(error)
     }

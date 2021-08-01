@@ -1,5 +1,7 @@
 <template>
-  <div class="table button-type" @click="toTxLobby"></div>
+  <div class="table button-type super-center" @click="toTxLobby">
+    Texas Hold 'em
+  </div>
 </template>
 
 <script>
