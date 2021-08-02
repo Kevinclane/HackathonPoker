@@ -257,9 +257,21 @@ class TexasHoldEmService {
   }
 
   async changePlayerTurn(seat) {
-    let nextSeatNumber = seat.Position + 1
-    if (nextSeatNumber == 7) {
-      nextSeatNumber = 1
+    let table = await dbContext.TexasHoldEm.findById(seat.TableId).populate({
+      path: "Seats",
+      populate: {
+        path: "Player",
+        populate: {
+          path: "Player"
+        }
+      }
+    }).populate("PlayersInGame")
+
+    let i = table.PlayersInGame.findIndex(p => p.id == seat.id)
+
+    let nextSeatNumber = i + 1
+    if (nextSeatNumber == table.PlayersInGame.length) {
+      nextSeatNumber = table.PlayersInGame[0]
     }
 
     let nextPlayersTurn = await dbContext.Seat.findOneAndUpdate({

@@ -81,6 +81,7 @@ class CardsService {
     }
     table = await dbContext.TexasHoldEm.findByIdAndUpdate(table._id, table)
   }
+
 }
 
 export const cardsService = new CardsService();

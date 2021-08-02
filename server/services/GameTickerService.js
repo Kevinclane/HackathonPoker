@@ -74,6 +74,17 @@ class GameTickerService {
       }).populate("Bets").populate("PlayersInGame")
     return table
   }
+
+  async setNextPlayer(table) {
+    let test = await dbContext.Seat.findOneAndUpdate(
+      {
+        _id: table.PlayersInGame[0]._id,
+        TableId: table.id
+      },
+      { Status: "Turn" },
+      { new: true })
+    console.log(test)
+  }
 }
 
 export const gameTickerService = new GameTickerService();

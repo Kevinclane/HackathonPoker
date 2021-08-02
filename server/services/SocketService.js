@@ -240,7 +240,7 @@ class SocketService {
               PlayersTurn: hc.table.PlayersInGame[0]._id,
             },
             { new: true })
-          await this._setNextPlayer(hc.table)
+          await gameTickerService.setNextPlayer(hc.table)
           updateDom = true
           break;
 
@@ -302,18 +302,7 @@ class SocketService {
     }
   }
 
-  async _setNextPlayer(table) {
-    let test = await dbContext.Seat.findOneAndUpdate(
-      {
-        _id: table.PlayersInGame[0]._id,
-        TableId: table.id
-      },
-      { Status: "Turn" },
-      { new: true })
-    console.log(test)
-  }
-
-  async _executeTasks(task) {
+  async executeTasks(task) {
     switch (task.action) {
       case "GetGame":
         this.io.emit("GetGame", task.payload)
