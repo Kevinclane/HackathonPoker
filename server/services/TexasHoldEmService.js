@@ -1,11 +1,6 @@
 import { dbContext } from "../db/DbContext";
 import { BadRequest } from "../utils/Errors";
-import { cardsService } from "./CardsService"
-import { gameTickerService } from "./GameTickerService";
-
-
-
-
+import { cardsService } from "./CardsService";
 
 class TexasHoldEmService {
   async createTable(table) {
@@ -62,6 +57,7 @@ class TexasHoldEmService {
     }
     table = await dbContext.TexasHoldEm.findByIdAndUpdate(table._id, table)
   }
+
   async joinTable(tableId, user) {
     let profile = await dbContext.Profile.findOne({ email: user.email })
     if (!profile) {
@@ -92,18 +88,18 @@ class TexasHoldEmService {
       }).populate("Bets")
     }
 
-    let i = 0
-    while (i < table.Seats.length) {
-      if (table.Seats[i].Player) {
-        if (table.Seats[i].Player.Player.id == profile.id) {
-          table.Seats[i].Player = await table.Seats[i].Player.populate("Cards").execPopulate()
-        } else {
-          table.Seats[i].Player.Cards = []
+    if (table.LifeStage != "Start") {
+      let i = 0
+      while (i < table.Seats.length) {
+        if (table.Seats[i].Player) {
+          if (table.Seats[i].Player.Player.id == profile.id) {
+            table.Seats[i].Player = await table.Seats[i].Player.populate("Cards").execPopulate()
+          } else {
+            table.Seats[i].Player.Cards = []
+          }
         }
+        i++
       }
-
-
-      i++
     }
 
 
@@ -275,6 +271,17 @@ class TexasHoldEmService {
 
     await dbContext.TexasHoldEm.findByIdAndUpdate(seat.TableId,
       { PlayersTurn: nextPlayersTurn })
+  }
+
+  async deleteTable(id) {
+    let table = await dbContext.TexasHoldEm.findById(id).populate("Seats")
+
+    await dbContext.PlayerTableData.deleteMany({ TableId: table.id })
+    await dbContext.Seat.deleteMany({ TableId: table.id })
+    await dbContext.Bet.deleteMany({ TableId: table.id })
+    await dbContext.TexasHoldEm.findByIdAndDelete(id)
+
+    return "Successfully deleted all items associated to: " + id
   }
 
 }

@@ -130,6 +130,14 @@ export default new Vuex.Store({
     },
     //#endregion TxTables
 
+    async deleteTable({ commit }, id) {
+      try {
+        let res = await api.delete("texasholdem/" + id)
+        console.log(res.data)
+      } catch (error) {
+        console.error(error)
+      }
+    },
 
 
     initializeSocket({ commit, dispatch }) {

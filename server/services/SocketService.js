@@ -215,12 +215,10 @@ class SocketService {
     }
     i = 0
     while (i < healthCheck.length) {
-      if (healthCheck[i].tasks.length > 0) {
-        let x = 0
-        while (x < healthCheck[i].tasks.length) {
-          await this._executeTasks(healthCheck[i].tasks[x])
-          x++
-        }
+      let x = 0
+      while (x < healthCheck[i].tasks.length) {
+        await this._executeTasks(healthCheck[i].tasks[x])
+        x++
       }
       i++
     }
@@ -232,28 +230,17 @@ class SocketService {
       switch (hc.table.LifeStage) {
         case "Start":
           hc.table = await gameTickerService.getPlayersInGame(hc.table)
+
           await cardsService.dealHands(hc.table);
           // let timer = moment().add(30, "seconds")
 
-          //change this to new PlayersInRound list on table 
-          // let filledSeats = []
-
-          let i = 0
-          while (i < hc.table.Seats.length) {
-            if (hc.table.Seats[i].Player) {
-              filledSeats.push(hc.table.Seats[i])
-            }
-            i++
-          }
-
-          hc.table = await dbContext.TexasHoldEm.findByIdAndUpdate(hc.table._id,
+          hc.table = await dbContext.TexasHoldEm.findByIdAndUpdate(hc.table.id,
             {
               LifeStage: "Round1",
-              PlayersTurn: filledSeats[0],
+              PlayersTurn: hc.table.PlayersInGame[0]._id,
             },
             { new: true })
-          await dbContext.Seat.findByIdAndUpdate(filledSeats[0].id,
-            { Status: "Turn" })
+          await this._setNextPlayer(hc.table)
           updateDom = true
           break;
 
@@ -313,6 +300,17 @@ class SocketService {
     } catch (error) {
       console.error(error)
     }
+  }
+
+  async _setNextPlayer(table) {
+    let test = await dbContext.Seat.findOneAndUpdate(
+      {
+        _id: table.PlayersInGame[0]._id,
+        TableId: table.id
+      },
+      { Status: "Turn" },
+      { new: true })
+    console.log(test)
   }
 
   async _executeTasks(task) {

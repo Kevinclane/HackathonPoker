@@ -14,6 +14,7 @@ export class TexasHoldEmController extends BaseController {
       .put("/leavetable/:id", this.leaveTable)
       .put("/sit/:id", this.sit)
       .post("/userchoice/:id", this.userChoice)
+      .delete("/:id", this.deleteTable)
   }
   async createTable(req, res, next) {
     try {
@@ -67,6 +68,14 @@ export class TexasHoldEmController extends BaseController {
   async userChoice(req, res, next) {
     try {
       let data = await texasHoldEmService.userChoice(req.body, req.userInfo)
+    } catch (error) {
+      next(error)
+    }
+  }
+  async deleteTable(req, res, next) {
+    try {
+      let data = await texasHoldEmService.deleteTable(req.params.id)
+      res.send(data)
     } catch (error) {
       next(error)
     }

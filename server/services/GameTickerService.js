@@ -53,10 +53,25 @@ class GameTickerService {
   }
 
   async getPlayersInGame(table) {
-    // table.PlayersInGame = [...table.PlayersAtTable]
+    let players = []
+    let i = 0
+    while (i < table.Seats.length) {
+      if (table.Seats[i].Player) {
+        players.push(table.Seats[i])
+      }
+      i++
+    }
     table = await dbContext.TexasHoldEm.findByIdAndUpdate(table._id,
-      { PlayersInGame: [...table.PlayersAtTable] },
-      { new: true })
+      { PlayersInGame: players },
+      { new: true }).populate({
+        path: "Seats",
+        populate: {
+          path: "Player",
+          populate: {
+            path: "Player"
+          }
+        }
+      }).populate("Bets").populate("PlayersInGame")
     return table
   }
 }

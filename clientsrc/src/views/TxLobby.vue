@@ -13,29 +13,12 @@
           ></i>
         </div>
       </div>
-      <!-- <div class="row mb-5">
-        <div class="col-12">
-          <span class="bold"> Buy In: </span>
-          <select name="buyin" id="buyin" v-model="newTable.BuyIn">
-            <option value="100">100</option>
-            <option value="500">500</option>
-            <option value="1000">1000</option>
-            <option value="10000">10000</option>
-            <option value="25000">25000</option>
-          </select>
-          <button
-            class="btn btn-info btn-sm ml-3"
-            @click="toggleShowCreateTable()"
-          >
-            Create Table
-          </button>
-        </div>
-      </div> -->
       <div class="row super-center border-bottom">
         <div class="col-2 bold">Table #</div>
-        <div class="col-6 border-left border-right bold">Buy-in</div>
+        <div class="col-4 border-left border-right bold">Buy-in</div>
         <div class="col-2 border-right bold">Players</div>
         <div class="col-2 bold">Join</div>
+        <div class="col-2 bold">Delete</div>
       </div>
       <div
         class="row super-center my-1"
@@ -44,11 +27,16 @@
         :table="table"
       >
         <div class="col-2">{{ table.Number }}</div>
-        <div class="col-6">${{ table.BuyIn }}</div>
+        <div class="col-4">${{ table.BuyIn }}</div>
         <div class="col-2">{{ table.PlayersAtTable.length }}</div>
         <div class="col-2">
           <button class="btn btn-sm btn-success" @click="joinTable(table.id)">
             Join
+          </button>
+        </div>
+        <div class="col-2">
+          <button class="btn btn-sm btn-danger" @click="deleteTable(table.id)">
+            Delete
           </button>
         </div>
       </div>
@@ -82,6 +70,9 @@ export default {
     },
     joinTable(id) {
       this.$router.push("texasholdemtable/" + id);
+    },
+    deleteTable(id) {
+      this.$store.dispatch("deleteTable", id);
     },
   },
 };
