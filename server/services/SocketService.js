@@ -2,12 +2,12 @@ import SocketIO from "socket.io";
 import auth0provider from "@bcwdev/auth0provider";
 import { texasHoldEmService } from "./TexasHoldEmService";
 import { gameTickerService } from "./GameTickerService";
+import { cardsService } from "./CardsService";
 import { dbContext } from "../db/DbContext";
+import moment from "moment"
 
 
-let state = {
-
-}
+let state = {}
 class SocketService {
   io = SocketIO();
   /**
@@ -44,7 +44,11 @@ class SocketService {
    * @param {string} room
    */
   JoinRoom(socket, room) {
-    this._gameTicker(room)
+    // this._gameTicker(room)
+    state.recentActivity.push({
+      action: "GetGame",
+      payload: room
+    })
     socket.join(room);
   }
   /**
@@ -81,102 +85,6 @@ class SocketService {
     };
   }
 
-
-  _texasHoldEmRouter(socket) {
-    return (req) => {
-      try {
-        switch (req.action) {
-          case "getSeats":
-            this._getSeats(req.body, socket)
-            break
-          case "playerLeft":
-            this._playerLeft(req.body, socket)
-            break
-        }
-      } catch (error) {
-        console.error(error)
-      }
-    }
-  }
-
-  async _gameTicker() {
-    setInterval(() => {
-      this._healthChecker()
-      console.log("Game ticker")
-    }, 10000)
-  }
-
-  async _healthChecker() {
-    let healthCheck = await gameTickerService.statusCheck()
-
-
-    if (healthCheck.Status == "Dead") {
-      // terminated = true
-      // gameBotRunning = false
-      setTimeout(() => {
-        this.handeTask(healthCheck)
-      }, 10000)
-    } else {
-
-      switch (healthCheck.Table.LifeStage) {
-        case "Start":
-          //
-          break;
-        case "Round1":
-          // check table.playersturn to local var 
-          //change to next taken seat if ==
-          break;
-        case "Round2":
-          //
-          break;
-        case "Round3":
-          //
-          break;
-        case "End":
-          //
-          break;
-      }
-
-      if (healthCheck.LifeStage == "Start") {
-
-      } else if (healthCheck.LifeStage == "Round1") {
-
-      }
-      setTimeout(() => {
-        this.handeTask(healthCheck)
-      }, 10000)
-    }
-  }
-
-  async _startGame(data, socket) {
-    try {
-      if (gameBot == null) {
-        gameBot = "Active"
-        gameTickerService.startUp
-      }
-      await texasHoldEmService.dealHands(data.tableId)
-      this.io.emit("StartGame", data.tableId)
-    } catch (error) {
-      console.error(error)
-    }
-  }
-
-  async _getSeats(data) {
-    try {
-      this.io.emit("GetSeats", data.tableId)
-    } catch (error) {
-      console.error(error)
-    }
-  }
-
-  async __playerLeft(data, socket) {
-    try {
-      this.io.emit("PlayerLeft", data.playerId)
-    } catch (error) {
-      console.error(error)
-    }
-  }
-
   _onDisconnect(socket) {
     return () => {
       try {
@@ -207,6 +115,221 @@ class SocketService {
       message: "Successfully Connected"
     });
   }
+
+  //#region GAME TICKER FUNCTIONS
+
+  _texasHoldEmRouter() {
+    return (req) => {
+      try {
+        switch (req.action) {
+          case "getSeats":
+            this.io.emit("GetSeats", req.body.tableId)
+            break
+          case "userChoice":
+            this._userChoice(req.body)
+            break
+        }
+      } catch (error) {
+        console.error(error)
+      }
+    }
+  }
+
+  _userChoice(choice) {
+    state.recentActivity.push({
+      action: "GetGame",
+      payload: choice.tableId
+    })
+
+    let i = state.playersTurnCounter.findIndex(p => p.table._id == choice.tableId)
+
+    if (choice.type == "Raise") {
+      state.playersTurnCounter[i].players = [choice.playerId]
+    } else {
+      state.playersTurnCounter[i].players.push(choice.playerId)
+    }
+
+    if (state.playersTurnCounter[i].table.PlayersAtTable.length == state.playersTurnCounter[i].players.length) {
+      gameTickerService.handleRoundChange(state.playersTurnCounter[i].table)
+      state.playersTurnCounter[i].players = []
+    }
+  }
+
+  async _gameTicker() {
+    await this._setupState()
+    setInterval(() => {
+      if (state.recentActivity.length > 0) {
+        this._activityHandler()
+        state.recentActivity = []
+      }
+      this._healthChecker()
+      console.log("Game ticker")
+    }, 5000)
+    // this._healthChecker()
+
+  }
+
+  async _setupState() {
+    let builtState = {
+      recentActivity: [],
+      playersTurnCounter: [],
+    }
+
+    let tables = await dbContext.TexasHoldEm.find()
+    let i = 0
+    while (i < tables.length) {
+      builtState.playersTurnCounter.push({
+        table: tables[i],
+        players: []
+      })
+      i++
+    }
+
+    state = builtState
+  }
+
+  async _activityHandler() {
+    let ra = [...state.recentActivity]
+    let i = 0
+    while (i < ra.length) {
+      switch (ra[i].action) {
+        case "GetGame":
+          this.io.emit("GetGame", ra[i].payload)
+          break;
+      }
+      i++
+    }
+  }
+
+  //queries db for all tables and check the count of players at table 
+  //returns an array of objects with 2 keys: table, boolean alive
+  async _healthChecker() {
+    let healthCheck = await gameTickerService.statusCheck()
+
+    let i = 0
+    while (i < healthCheck.length) {
+      if (healthCheck[i].alive) {
+        healthCheck[i] = await this._stageChecker(healthCheck[i])
+      }
+      i++
+    }
+    i = 0
+    while (i < healthCheck.length) {
+      if (healthCheck[i].tasks.length > 0) {
+        let x = 0
+        while (x < healthCheck[i].tasks.length) {
+          await this._executeTasks(healthCheck[i].tasks[x])
+          x++
+        }
+      }
+      i++
+    }
+  }
+
+  async _stageChecker(hc) {
+    try {
+      let updateDom = false
+      switch (hc.table.LifeStage) {
+        case "Start":
+          hc.table = await gameTickerService.getPlayersInGame(hc.table)
+          await cardsService.dealHands(hc.table);
+          // let timer = moment().add(30, "seconds")
+
+          //change this to new PlayersInRound list on table 
+          // let filledSeats = []
+
+          let i = 0
+          while (i < hc.table.Seats.length) {
+            if (hc.table.Seats[i].Player) {
+              filledSeats.push(hc.table.Seats[i])
+            }
+            i++
+          }
+
+          hc.table = await dbContext.TexasHoldEm.findByIdAndUpdate(hc.table._id,
+            {
+              LifeStage: "Round1",
+              PlayersTurn: filledSeats[0],
+            },
+            { new: true })
+          await dbContext.Seat.findByIdAndUpdate(filledSeats[0].id,
+            { Status: "Turn" })
+          updateDom = true
+          break;
+
+        case "Round1":
+          //should only trigger on the first cycle of round1 to draw comm cards
+          if (hc.table.CommunityCards.length == 0) {
+            let dc = await cardsService.drawFromDeck(hc.table.Deck, 3)
+            hc.table = await dbContext.TexasHoldEm.findByIdAndUpdate(hc.table._id,
+              {
+                Deck: dc.Deck,
+                CommunityCards: dc.cards
+              },
+              { new: true })
+            updateDom = true
+          }
+          console.log("Round1")
+          break;
+        case "Round2":
+          if (hc.table.CommunityCards.length == 3) {
+            let dc = await cardsService.drawFromDeck(hc.table.Deck, 1)
+
+            let plusCard = [...hc.table.CommunityCards, dc.cards[0]]
+
+            hc.table = await dbContext.TexasHoldEm.findByIdAndUpdate(hc.table._id,
+              {
+                Deck: dc.Deck,
+                CommunityCards: plusCard
+              },
+              { new: true })
+          }
+          console.log("Round2")
+          break;
+        case "Round3":
+          if (hc.table.CommunityCards.length == 4) {
+            let dc = await cardsService.drawFromDeck(hc.table.Deck, 1)
+
+            let plusCard = [...hc.table.CommunityCards, dc.cards[0]]
+
+            hc.table = await dbContext.TexasHoldEm.findByIdAndUpdate(hc.table._id,
+              {
+                Deck: dc.Deck,
+                CommunityCards: plusCard
+              },
+              { new: true })
+          }
+          console.log("Round3")
+          break;
+        case "End":
+          //
+          console.log("End")
+          break;
+      }
+      if (updateDom) {
+        this.io.emit("GetGame", hc.table._id)
+      }
+      return hc
+    } catch (error) {
+      console.error(error)
+    }
+  }
+
+  async _executeTasks(task) {
+    switch (task.action) {
+      case "GetGame":
+        this.io.emit("GetGame", task.payload)
+    }
+  }
+
+  async __playerLeft(data, socket) {
+    try {
+      this.io.emit("PlayerLeft", data.playerId)
+    } catch (error) {
+      console.error(error)
+    }
+  }
+
 }
 
 const socketService = new SocketService();

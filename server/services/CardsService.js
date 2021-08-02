@@ -42,7 +42,7 @@ class CardsService {
   drawFromDeck(Deck, num) {
     let cards = []
     while (num > 0) {
-      let i = Math.floor(Math.random() * (Deck.length + 1))
+      let i = Math.floor(Math.random() * (Deck.length))
       cards.push(Deck[i])
       Deck.splice(i, 1)
       num--
@@ -59,6 +59,19 @@ class CardsService {
       Player: profile.id
     })
     return data
+  }
+  async dealHands(table) {
+    let i = 0
+    while (i < table.Seats.length) {
+      if (table.Seats[i].Player) {
+        let data = await this.drawFromDeck(table.Deck, 2)
+        table.Deck = data.Deck
+        await dbContext.PlayerTableData.findByIdAndUpdate(table.Seats[i].Player._id,
+          { Cards: data.cards })
+      }
+      i++
+    }
+    table = await dbContext.TexasHoldEm.findByIdAndUpdate(table._id, table)
   }
 }
 

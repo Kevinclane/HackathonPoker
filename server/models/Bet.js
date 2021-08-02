@@ -4,8 +4,10 @@ let ObjectId = Schema.Types.ObjectId;
 
 const Bet = new Schema(
   {
-    Players: [{ type: ObjectId, ref: "Profile" }],
-    Escrow: { type: Number }
+    TableId: { type: ObjectId, ref: "TexasHoldEm" },
+    Player: { type: ObjectId, ref: "Profile" },
+    Escrow: { type: Number },
+    GroupNumber: { type: Number }
   }
 )
 

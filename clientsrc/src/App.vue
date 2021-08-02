@@ -50,4 +50,10 @@ export default {
 .bold {
   font-weight: bold;
 }
+.card-board {
+  height: 10.5vh;
+  width: 7.5vh;
+  margin-left: 1vw;
+  margin-right: 1vw;
+}
 </style>

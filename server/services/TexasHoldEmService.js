@@ -3,6 +3,10 @@ import { BadRequest } from "../utils/Errors";
 import { cardsService } from "./CardsService"
 import { gameTickerService } from "./GameTickerService";
 
+
+
+
+
 class TexasHoldEmService {
   async createTable(table) {
     table.Deck = await cardsService.createDeck()
@@ -71,7 +75,7 @@ class TexasHoldEmService {
           path: "Player"
         }
       }
-    }).populate("TotalBets").populate("TurnBets")
+    }).populate("Bets")
 
     if (!table.PlayersAtTable.includes(profile._id)) {
       table = await dbContext.TexasHoldEm.findByIdAndUpdate(
@@ -85,20 +89,23 @@ class TexasHoldEmService {
             path: "Player"
           }
         }
-      }).populate("TotalBets").populate("TurnBets")
+      }).populate("Bets")
     }
 
     let i = 0
     while (i < table.Seats.length) {
       if (table.Seats[i].Player) {
-        if (table.Seats[i].Player.Player == profile._id) {
+        if (table.Seats[i].Player.Player.id == profile.id) {
           table.Seats[i].Player = await table.Seats[i].Player.populate("Cards").execPopulate()
         } else {
           table.Seats[i].Player.Cards = []
         }
       }
+
+
       i++
     }
+
 
     table.Deck = []
     return table
@@ -114,7 +121,7 @@ class TexasHoldEmService {
           path: "Player"
         }
       }
-    }).populate("TotalBets").populate("TurnBets")
+    }).populate("Bets")
     //TODO handle money stuff here after leaving 
     let i = table.Seats.findIndex(s => s.Player.Player._id == profile._id)
     if (i != -1) {
@@ -159,7 +166,7 @@ class TexasHoldEmService {
           }
         })
     }
-    let table = await dbContext.TexasHoldEm.findByIdAndUpdate(
+    await dbContext.TexasHoldEm.findByIdAndUpdate(
       { _id: tableId },
       {
         $pull: { PlayersWatching: profile._id },
@@ -168,20 +175,7 @@ class TexasHoldEmService {
       { new: true }
     )
 
-    let startGame = false
-    if (table.PlayersAtTable.length > 1 && !table.Active) {
-      table.Active = true;
-      if (table.Seats[0])
-        // table.PlayersTurn = table.Seat[0].findOne(p =>)
-        //set playersturn
-        //call drawCards
-        startGame = true
-      //this bool will tell the client to emit a getGame type of call
-      //set timer
-      this.gameTicker(table)
-    }
-
-    return { seat, startGame }
+    return seat
   }
 
   async stand() {
@@ -210,8 +204,77 @@ class TexasHoldEmService {
     return seats
   }
 
-  async gameTicker(table) {
+  async userChoice(choice, user) {
+    let profile = await dbContext.Profile.findOne({ email: user.email })
+    let PTD = await dbContext.PlayerTableData.findOne({
+      TableId: choice.tableId,
+      Player: profile._id
+    })
 
+    if (choice.type == "Raise" || choice.type == "Call") {
+      let bet = await dbContext.Bet.create({
+        Escrow: choice.amount,
+        TableId: choice.tableId,
+        Player: profile._id,
+        GroupNumber: choice.groupNumber
+      })
+
+      let PTD = await dbContext.PlayerTableData.findOne({
+        TableId: choice.tableId,
+        Player: profile._id
+      })
+      let newPTDWallet = PTD.Wallet - choice.amount
+      await dbContext.PlayerTableData.findByIdAndUpdate(PTD._id, { Wallet: newPTDWallet })
+
+      let seat = await dbContext.Seat.findOneAndUpdate({
+        TableId: choice.tableId,
+        Player: PTD._id
+      },
+        {
+          $addToSet: { CurrentBets: bet.id },
+          Status: "Idle"
+        })
+
+      await this.changePlayerTurn(seat)
+
+    } else if (choice.type == "Pass") {
+
+      let seat = await dbContext.Seat.findOneAndUpdate({
+        TableId: choice.tableId,
+        Player: PTD.id
+      },
+        { Status: "Idle" }
+      )
+
+      await this.changePlayerTurn(seat)
+
+    } else if (choice.type == "Fold") {
+
+      let seat = await dbContext.Seat.findOneAndUpdate({
+        TableId: choice.tableId,
+        Player: PTD.id,
+        Status: "Folded"
+      })
+
+      await this.changePlayerTurn(seat)
+    }
+  }
+
+  async changePlayerTurn(seat) {
+    let nextSeatNumber = seat.Position + 1
+    if (nextSeatNumber == 7) {
+      nextSeatNumber = 1
+    }
+
+    let nextPlayersTurn = await dbContext.Seat.findOneAndUpdate({
+      TableId: seat.TableId,
+      Position: nextSeatNumber
+    },
+      { Status: "Turn" },
+      { new: true })
+
+    await dbContext.TexasHoldEm.findByIdAndUpdate(seat.TableId,
+      { PlayersTurn: nextPlayersTurn })
   }
 
 }

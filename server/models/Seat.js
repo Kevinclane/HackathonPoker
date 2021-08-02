@@ -6,7 +6,9 @@ const Seat = new Schema(
   {
     TableId: { type: ObjectId, ref: "TexasHoldEm" },
     Player: { type: ObjectId, ref: "PlayerTableData" },
-    Position: { type: Number }
+    Position: { type: Number },
+    Status: { type: String, default: "Idle", enum: ["Idle", "Turn", "Folded"] },
+    CurrentBets: [{ type: ObjectId, ref: "Bet" }]
   }
 )
 

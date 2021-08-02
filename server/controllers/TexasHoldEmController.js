@@ -11,8 +11,9 @@ export class TexasHoldEmController extends BaseController {
       .get("/gettables", this.getAllTables)
       .get("/getseats/:id", this.getSeats)
       .put("/jointable/:id", this.joinTable)
-      .put("leavetable/:id", this.leaveTable)
+      .put("/leavetable/:id", this.leaveTable)
       .put("/sit/:id", this.sit)
+      .post("/userchoice/:id", this.userChoice)
   }
   async createTable(req, res, next) {
     try {
@@ -59,6 +60,13 @@ export class TexasHoldEmController extends BaseController {
     try {
       let data = await texasHoldEmService.sit(req.params.id, req.userInfo, req.body)
       res.send(data)
+    } catch (error) {
+      next(error)
+    }
+  }
+  async userChoice(req, res, next) {
+    try {
+      let data = await texasHoldEmService.userChoice(req.body, req.userInfo)
     } catch (error) {
       next(error)
     }

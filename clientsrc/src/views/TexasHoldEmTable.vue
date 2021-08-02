@@ -10,31 +10,67 @@
       <div class="col-3 mb-3">
         <seat class="" :seat="table.Seats[2]" :BuyIn="table.BuyIn" />
       </div>
+
+      <!-- REGION TABLE -->
+
       <div class="col-12">
         <div class="row">
           <div class="col-10 offset-1 table super-center">
             <div class="row">
               <div class="col-12 d-flex">
-                <div class="card-board dotted-border">
-                  <img v-if="communityCards[0]" src="" alt="" />
-                </div>
-                <div class="card-board dotted-border">
-                  <img v-if="communityCards[1]" src="" alt="" />
-                </div>
-                <div class="card-board dotted-border">
-                  <img v-if="communityCards[2]" src="" alt="" />
-                </div>
-                <div class="card-board dotted-border">
-                  <img v-if="communityCards[3]" src="" alt="" />
-                </div>
-                <div class="card-board dotted-border">
-                  <img v-if="communityCards[4]" src="" alt="" />
-                </div>
+                <img
+                  class="card-board"
+                  v-if="table.CommunityCards[0]"
+                  :src="
+                    require('../assets/Cards/' + table.CommunityCards[0].Img)
+                  "
+                  alt="error loading image"
+                />
+                <div v-else class="card-board dotted-border"></div>
+                <img
+                  class="card-board"
+                  v-if="table.CommunityCards[1]"
+                  :src="
+                    require('../assets/Cards/' + table.CommunityCards[1].Img)
+                  "
+                  alt="error loading image"
+                />
+                <div v-else class="card-board dotted-border"></div>
+                <img
+                  class="card-board"
+                  v-if="table.CommunityCards[2]"
+                  :src="
+                    require('../assets/Cards/' + table.CommunityCards[2].Img)
+                  "
+                  alt="error loading image"
+                />
+                <div v-else class="card-board dotted-border"></div>
+                <img
+                  class="card-board"
+                  v-if="table.CommunityCards[3]"
+                  :src="
+                    require('../assets/Cards/' + table.CommunityCards[3].Img)
+                  "
+                  alt="error loading image"
+                />
+                <div v-else class="card-board dotted-border"></div>
+                <img
+                  class="card-board"
+                  v-if="table.CommunityCards[4]"
+                  :src="
+                    require('../assets/Cards/' + table.CommunityCards[4].Img)
+                  "
+                  alt="error loading image"
+                />
+                <div v-else class="card-board dotted-border"></div>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      <!-- END REGION -->
+
       <div class="col-3 mt-3">
         <seat class="" :seat="table.Seats[3]" :BuyIn="table.BuyIn" />
       </div>
@@ -53,9 +89,7 @@ import Seat from "../components/Seat.vue";
 export default {
   name: "TexasHoldEmTable",
   data() {
-    return {
-      communityCards: [],
-    };
+    return {};
   },
   async mounted() {
     await this.$store.dispatch("initializeSocket");
@@ -106,17 +140,7 @@ export default {
   /* border: 4px solid cyan; */
 }
 
-.card-board {
-  height: 10.5vh;
-  width: 7.5vh;
-  margin-left: 1vw;
-  margin-right: 1vw;
-}
 .dotted-border {
   border: 2px dotted white;
-}
-.card-hand-1 {
-}
-.card-hand-2 {
 }
 </style>

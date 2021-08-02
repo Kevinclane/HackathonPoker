@@ -12,8 +12,7 @@ export default new Vuex.Store({
   state: {
     user: {},
     tables: [],
-    activeTable: {},
-    hand: []
+    activeTable: {}
   },
   mutations: {
     setUser(state, user) {
@@ -25,13 +24,9 @@ export default new Vuex.Store({
     setTables(state, tables) {
       state.tables = tables
     },
-    setHand(state, cards) {
-      state.hand = cards
-    },
     setSeats(state, seats) {
       state.activeTable.Seats = seats
       let i = 0
-      debugger
       while (i < seats.length) {
         if (seats[i].Player) {
           if (seats[i].Player.Cards.length > 0) {
@@ -41,22 +36,6 @@ export default new Vuex.Store({
         i++
       }
     },
-    playerLeft(state, _id) {
-      state.activeTable
-      let i = table.Seats.findIndex(s => s.Player.Player._id == profile._id)
-      if (i != -1) {
-        table.Seats[i].Player = null
-      }
-      if (table.PlayersWatching.includes(profile.id)) {
-        i = table.PlayersWatching.findIndex(p => p.id == id)
-        table.PlayersWatching.splice(i, 1)
-      }
-      if (table.PlayersAtTable.includes(profile.id)) {
-        i = table.PlayersAtTable.findIndex(p => p.id == id)
-        table.PlayersAtTable.splice(i, 1)
-      }
-      state.activeTable = table
-    }
   },
   actions: {
     setBearer({ }, bearer) {
@@ -96,7 +75,6 @@ export default new Vuex.Store({
     async joinTable({ commit, dispatch }, tableId) {
       try {
         let res = await api.put("/texasholdem/jointable/" + tableId)
-        // debugger
         commit("setActiveTable", res.data)
       } catch (error) {
         console.error(error)
@@ -119,7 +97,7 @@ export default new Vuex.Store({
     },
     async sit({ commit }, reqObj) {
       try {
-        let res = await api.put("/texasholdem/sit/" + reqObj.tableId, reqObj)
+        await api.put("/texasholdem/sit/" + reqObj.tableId, reqObj)
 
         socket.emit("texasholdem", {
           action: "getSeats", body: {
@@ -138,6 +116,18 @@ export default new Vuex.Store({
         console.error(error)
       }
     },
+    async submitUserChoice({ }, choice) {
+      try {
+        let res = await api.post("/texasholdem/userchoice/" + choice.tableId, choice)
+        debugger
+        socket.emit("texasholdem", {
+          action: "userChoice", body: choice
+        })
+        //emit to add this to recentActivity in socketservice
+      } catch (error) {
+        console.error(error)
+      }
+    },
     //#endregion TxTables
 
 
@@ -152,19 +142,11 @@ export default new Vuex.Store({
       socket.on("CONNECTED", (data) => {
         console.log(data.message)
       });
-
-      socket.on("StartGame", (tableId) => {
-        dispatch("joinTable", tableId)
-      });
       socket.on("GetSeats", (id) => {
         dispatch("getSeats", id)
-        console.log("Seat: seat")
       })
-      socket.on("PlayerLeft", (id) => {
-        commit("playerLeft", id)
-      })
-      socket.on("Test", (msg) => {
-        console.log("Test message: ", msg)
+      socket.on("GetGame", (tableId) => {
+        dispatch("joinTable", tableId)
       })
 
     },
