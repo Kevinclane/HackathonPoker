@@ -15,8 +15,9 @@ const TexasHoldEm = new Schema(
     BuyIn: { type: Number, required: true },
     Number: { type: Number, required: true },
     Active: { type: Boolean, default: false },
+    Winner: [{ type: ObjectId, ref: "PlayerTableData" }],
+    Bets: [{ type: ObjectId, ref: "BundledBet" }],
     LifeStage: { type: String, default: "Start", enum: ['Start', "Round1", "Round2", "Round3", "End"] },
-    Bets: [{ type: ObjectId, ref: "BundledBet" }]
   },
   { timestamps: true, toJSON: { virtuals: true } }
 );

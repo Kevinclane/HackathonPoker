@@ -82,7 +82,9 @@
               </div>
             </div>
             <div class="row bet-row w-100">
-              <div class="col-12">Next Game in</div>
+              <div class="col-12">
+                <div v-if="winners.length > 0">Next game starting soon...</div>
+              </div>
             </div>
             <div class="row bet-row w-100">
               <div class="col-12 d-flex justify-content-around">
@@ -129,6 +131,16 @@ export default {
   computed: {
     table() {
       return this.$store.state.activeTable;
+    },
+    winners() {
+      return this.$store.state.winners;
+    },
+    winnerMessage() {
+      let i = 0;
+      let message = "Winner(s): ";
+      while (i < this.winners.length) {
+        message += this.winners[i].i++;
+      }
     },
   },
   methods: {},

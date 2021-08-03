@@ -1,6 +1,7 @@
 import { dbContext } from "../db/DbContext";
 import { BadRequest } from "../utils/Errors";
 import { cardsService } from "./CardsService";
+import { profilesService } from "./ProfilesService";
 
 class TexasHoldEmService {
   async createTable(table) {
@@ -162,6 +163,10 @@ class TexasHoldEmService {
       Player: profile._id,
       Wallet: data.buyIn
     })
+
+    let newCredits = profile.credits - data.buyIn
+    await dbContext.Profile.findByIdAndUpdate(profile.id,
+      { credits: newCredits })
 
     let seat = await dbContext.Seat.findOne({
       TableId: tableId,

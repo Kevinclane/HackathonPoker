@@ -6,6 +6,7 @@ import { cardsService } from "./CardsService";
 import { dbContext } from "../db/DbContext";
 import moment from "moment"
 
+var Hand = require('pokersolver').Hand;
 
 let state = {}
 class SocketService {
@@ -145,14 +146,7 @@ class SocketService {
       this._healthChecker()
       console.log("Game ticker")
     }, 1000)
-    // this._healthChecker()
-
   }
-
-  // async _updateState(table) {
-  //   let i = state.playersTurnCounter.findIndex(p => p.table._id == table.id)
-  //   state.playersTurnCounter[i].table = table
-  // }
   async _setupState() {
     let builtState = {
       recentActivity: [],
@@ -247,7 +241,6 @@ class SocketService {
               { new: true })
             updateDom = true
           }
-          console.log("Round1")
           break;
 
 
@@ -265,7 +258,6 @@ class SocketService {
               { new: true })
             updateDom = true
           }
-          console.log("Round2")
           break;
 
 
@@ -283,13 +275,16 @@ class SocketService {
               { new: true })
             updateDom = true
           }
-          console.log("Round3")
           break;
 
 
         case "End":
-          //
-          console.log("End")
+          if (hc.table.Winner.length == 0) {
+            hc.table = await gameTickerService.calculateWinner(hc.table)
+            this.io.emit("Winner", hc.table.Winner)
+          } else if (moment().isAfter(moment(hc.table.Timer))) {
+            await gameTickerService.handleRoundChange(hc.table)
+          }
           break;
       }
       if (updateDom) {

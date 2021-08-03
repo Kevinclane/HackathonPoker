@@ -152,6 +152,11 @@ export default {
     callDifference() {
       return this.$store.state.highestBet - this.seat.Bet.Escrow;
     },
+    winner() {
+      if (this.$store.state.winners.includes(this.seat.Player._id)) {
+        return true;
+      } else return false;
+    },
   },
   methods: {
     promptJoin() {
@@ -247,8 +252,8 @@ export default {
 }
 .edit-button {
   position: absolute;
-  right: 8vh;
-  top: 7vh;
+  right: 70%;
+  top: 60%;
 }
 
 .cwSpin {
