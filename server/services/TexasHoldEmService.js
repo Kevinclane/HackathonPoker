@@ -5,24 +5,36 @@ import { cardsService } from "./CardsService";
 class TexasHoldEmService {
   async createTable(table) {
     table.Deck = await cardsService.createDeck()
+
     table.Seats = []
     let i = 0
     while (i < 6) {
+      let Bet = await dbContext.Bet.create({})
       let seat = await dbContext.Seat.create({
-        Position: i + 1
+        Position: i + 1,
+        Bet: Bet.id
       })
       table.Seats.push(seat)
       i++
     }
+
     let newTable = await dbContext.TexasHoldEm.create(table)
+
     i = 0
     while (i < newTable.Seats.length) {
       newTable.Seats[i].TableId = newTable._id
       newTable.Seats[i] = await dbContext.Seat.findByIdAndUpdate(newTable.Seats[i]._id,
         { TableId: newTable._id },
         { new: true })
+
+      await dbContext.Bet.findByIdAndUpdate(newTable.Seats[i].Bet,
+        {
+          TableId: newTable._id,
+          Seat: newTable.Seats[i]._id
+        })
       i++
     }
+
     newTable = await dbContext.TexasHoldEm.findByIdAndUpdate(newTable._id, newTable, { new: true }).populate("Seats")
     return newTable
   }
@@ -73,6 +85,7 @@ class TexasHoldEmService {
       }
     }).populate("Bets")
 
+    //if page reloads, doesn' try to add player again
     if (!table.PlayersAtTable.includes(profile._id)) {
       table = await dbContext.TexasHoldEm.findByIdAndUpdate(
         { _id: tableId },
@@ -88,6 +101,7 @@ class TexasHoldEmService {
       }).populate("Bets")
     }
 
+    //gets cards
     if (table.LifeStage != "Start") {
       let i = 0
       while (i < table.Seats.length) {
@@ -98,6 +112,7 @@ class TexasHoldEmService {
             table.Seats[i].Player.Cards = []
           }
         }
+        table.Seats[i] = await table.Seats[i].populate("Bet").execPopulate()
         i++
       }
     }
@@ -151,8 +166,10 @@ class TexasHoldEmService {
     let seat = await dbContext.Seat.findOne({
       TableId: tableId,
       Position: data.position
-    }).populate("Player")
+    }).populate("Player").populate("Bet")
     if (seat.Player == null) {
+      await dbContext.Bet.findByIdAndUpdate(seat.Bet.id,
+        { Player: profile.id })
       seat = await dbContext.Seat.findByIdAndUpdate(seat._id,
         { Player: playerTableData._id },
         { new: true }).populate({
@@ -160,7 +177,7 @@ class TexasHoldEmService {
           populate: {
             path: "Player"
           }
-        })
+        }).populate("Bet")
     }
     await dbContext.TexasHoldEm.findByIdAndUpdate(
       { _id: tableId },
@@ -184,7 +201,7 @@ class TexasHoldEmService {
       populate: {
         path: "Player"
       }
-    })
+    }).populate("Bet")
 
     let i = 0
     while (i < seats.length) {
@@ -195,6 +212,7 @@ class TexasHoldEmService {
           seats[i].Player.Cards = []
         }
       }
+      // seats[i] = await seats[i].populate("Bet").execPopulate()
       i++
     }
     return seats
@@ -203,40 +221,38 @@ class TexasHoldEmService {
   async userChoice(choice, user) {
     let profile = await dbContext.Profile.findOne({ email: user.email })
     let PTD = await dbContext.PlayerTableData.findOne({
-      TableId: choice.tableId,
+      TableId: choice.Bet.TableId,
       Player: profile._id
     })
 
     if (choice.type == "Raise" || choice.type == "Call") {
-      let bet = await dbContext.Bet.create({
-        Escrow: choice.amount,
-        TableId: choice.tableId,
-        Player: profile._id,
-        GroupNumber: choice.groupNumber
-      })
 
+      //take money from player's wallet
       let PTD = await dbContext.PlayerTableData.findOne({
-        TableId: choice.tableId,
+        TableId: choice.Bet.TableId,
         Player: profile._id
       })
-      let newPTDWallet = PTD.Wallet - choice.amount
-      await dbContext.PlayerTableData.findByIdAndUpdate(PTD._id, { Wallet: newPTDWallet })
+      let newPTDWallet = PTD.Wallet - choice.newBet
+      PTD = await dbContext.PlayerTableData.findByIdAndUpdate(PTD._id, { Wallet: newPTDWallet })
 
+      //set seat status to Idle
       let seat = await dbContext.Seat.findOneAndUpdate({
-        TableId: choice.tableId,
+        TableId: choice.Bet.TableId,
         Player: PTD._id
       },
-        {
-          $addToSet: { CurrentBets: bet.id },
-          Status: "Idle"
-        })
+        { Status: "Idle" })
+
+      //update Bet Escrow amount
+      await dbContext.Bet.findByIdAndUpdate(choice.Bet._id,
+        { Escrow: choice.Bet.Escrow },
+        { new: true })
 
       await this.changePlayerTurn(seat)
 
     } else if (choice.type == "Pass") {
 
       let seat = await dbContext.Seat.findOneAndUpdate({
-        TableId: choice.tableId,
+        TableId: choice.Bet.TableId,
         Player: PTD.id
       },
         { Status: "Idle" }
@@ -246,14 +262,19 @@ class TexasHoldEmService {
 
     } else if (choice.type == "Fold") {
 
+
       let seat = await dbContext.Seat.findOneAndUpdate({
         TableId: choice.tableId,
         Player: PTD.id,
         Status: "Folded"
       })
 
+      await dbContext.TexasHoldEm.findByIdAndUpdate(choice.Bet.TableId,
+        { $pull: { PlayersInGame: profile.id } })
+
       await this.changePlayerTurn(seat)
     }
+    return "Successfully taken turn"
   }
 
   async changePlayerTurn(seat) {
@@ -269,10 +290,12 @@ class TexasHoldEmService {
 
     let i = table.PlayersInGame.findIndex(p => p.id == seat.id)
 
-    let nextSeatNumber = i + 1
-    if (nextSeatNumber == table.PlayersInGame.length) {
-      nextSeatNumber = table.PlayersInGame[0]
+    i++
+    if (i == table.PlayersInGame.length) {
+      i = 0
     }
+
+    let nextSeatNumber = table.PlayersInGame[i].Position
 
     let nextPlayersTurn = await dbContext.Seat.findOneAndUpdate({
       TableId: seat.TableId,

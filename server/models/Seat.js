@@ -8,7 +8,7 @@ const Seat = new Schema(
     Player: { type: ObjectId, ref: "PlayerTableData" },
     Position: { type: Number },
     Status: { type: String, default: "Idle", enum: ["Idle", "Turn", "Folded"] },
-    CurrentBets: [{ type: ObjectId, ref: "Bet" }]
+    Bet: { type: ObjectId, ref: "Bet" }
   }
 )
 

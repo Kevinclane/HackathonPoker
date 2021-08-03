@@ -56,4 +56,14 @@ export default {
   margin-left: 1vw;
   margin-right: 1vw;
 }
+.flow-column {
+  flex-flow: column;
+}
+.flow-column-reverse {
+  flex-flow: column-reverse;
+}
+.chip-size {
+  height: 3vh;
+  width: 3vh;
+}
 </style>

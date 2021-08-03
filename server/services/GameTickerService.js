@@ -39,14 +39,21 @@ class GameTickerService {
     let newStage = ""
     switch (table.LifeStage) {
       case "Round1":
+        await this.bundleBets(table)
         newStage = "Round2"
         break;
       case "Round2":
+        await this.bundleBets(table)
         newStage = "Round3"
         break;
       case "Round3":
+        await this.bundleBets(table)
         newStage = "End"
-        break
+        break;
+      case "End":
+
+        newStage = "Start"
+        break;
     }
     await dbContext.TexasHoldEm.findByIdAndUpdate(table._id,
       { LifeStage: newStage })
@@ -84,6 +91,36 @@ class GameTickerService {
       { Status: "Turn" },
       { new: true })
     console.log(test)
+  }
+
+  async bundleBets(table) {
+    try {
+      let players = []
+      let total = 0
+      let i = 0
+      while (i < table.Seats.length) {
+        if (table.Seats[i].Player) {
+          players.push(table.Seats[i].Player)
+        }
+        total += table.Seats[i].Bet.Escrow
+        await dbContext.Bet.findByIdAndUpdate(table.Seats[i].Bet._id,
+          { Escrow: 0 })
+        i++
+      }
+
+      let bundledBet = await dbContext.BundledBet.create({
+        TableId: table._id,
+        Escrow: total,
+        Players: players
+      })
+
+      let testUpdate = await dbContext.TexasHoldEm.findByIdAndUpdate(table._id,
+        { $addToSet: { Bets: bundledBet._id } },
+        { new: true })
+
+    } catch (error) {
+      console.error(error)
+    }
   }
 }
 

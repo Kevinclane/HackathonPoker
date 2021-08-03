@@ -62,5 +62,11 @@ class ProfileService {
     );
     return profile;
   }
+  async updatePic(pic, user) {
+    let profile = await dbContext.Profile.findOneAndUpdate({ email: user.email },
+      { picture: pic },
+      { new: true })
+    return profile
+  }
 }
 export const profilesService = new ProfileService();

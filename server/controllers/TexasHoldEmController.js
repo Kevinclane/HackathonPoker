@@ -68,6 +68,7 @@ export class TexasHoldEmController extends BaseController {
   async userChoice(req, res, next) {
     try {
       let data = await texasHoldEmService.userChoice(req.body, req.userInfo)
+      res.send(data)
     } catch (error) {
       next(error)
     }

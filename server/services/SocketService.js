@@ -135,26 +135,6 @@ class SocketService {
     }
   }
 
-  _userChoice(choice) {
-    state.recentActivity.push({
-      action: "GetGame",
-      payload: choice.tableId
-    })
-
-    let i = state.playersTurnCounter.findIndex(p => p.table._id == choice.tableId)
-
-    if (choice.type == "Raise") {
-      state.playersTurnCounter[i].players = [choice.playerId]
-    } else {
-      state.playersTurnCounter[i].players.push(choice.playerId)
-    }
-
-    if (state.playersTurnCounter[i].table.PlayersAtTable.length == state.playersTurnCounter[i].players.length) {
-      gameTickerService.handleRoundChange(state.playersTurnCounter[i].table)
-      state.playersTurnCounter[i].players = []
-    }
-  }
-
   async _gameTicker() {
     await this._setupState()
     setInterval(() => {
@@ -164,11 +144,15 @@ class SocketService {
       }
       this._healthChecker()
       console.log("Game ticker")
-    }, 5000)
+    }, 1000)
     // this._healthChecker()
 
   }
 
+  // async _updateState(table) {
+  //   let i = state.playersTurnCounter.findIndex(p => p.table._id == table.id)
+  //   state.playersTurnCounter[i].table = table
+  // }
   async _setupState() {
     let builtState = {
       recentActivity: [],
@@ -204,23 +188,27 @@ class SocketService {
   //queries db for all tables and check the count of players at table 
   //returns an array of objects with 2 keys: table, boolean alive
   async _healthChecker() {
-    let healthCheck = await gameTickerService.statusCheck()
+    try {
+      let healthCheck = await gameTickerService.statusCheck()
 
-    let i = 0
-    while (i < healthCheck.length) {
-      if (healthCheck[i].alive) {
-        healthCheck[i] = await this._stageChecker(healthCheck[i])
+      let i = 0
+      while (i < healthCheck.length) {
+        if (healthCheck[i].alive) {
+          healthCheck[i] = await this._stageChecker(healthCheck[i])
+        }
+        i++
       }
-      i++
-    }
-    i = 0
-    while (i < healthCheck.length) {
-      let x = 0
-      while (x < healthCheck[i].tasks.length) {
-        await this._executeTasks(healthCheck[i].tasks[x])
-        x++
+      i = 0
+      while (i < healthCheck.length) {
+        let x = 0
+        while (x < healthCheck[i].tasks.length) {
+          await this._executeTasks(healthCheck[i].tasks[x])
+          x++
+        }
+        i++
       }
-      i++
+    } catch (error) {
+      console.error(error)
     }
   }
 
@@ -230,6 +218,8 @@ class SocketService {
       switch (hc.table.LifeStage) {
         case "Start":
           hc.table = await gameTickerService.getPlayersInGame(hc.table)
+
+          // await updateState(hc.table)
 
           await cardsService.dealHands(hc.table);
           // let timer = moment().add(30, "seconds")
@@ -244,6 +234,7 @@ class SocketService {
           updateDom = true
           break;
 
+
         case "Round1":
           //should only trigger on the first cycle of round1 to draw comm cards
           if (hc.table.CommunityCards.length == 0) {
@@ -251,13 +242,15 @@ class SocketService {
             hc.table = await dbContext.TexasHoldEm.findByIdAndUpdate(hc.table._id,
               {
                 Deck: dc.Deck,
-                CommunityCards: dc.cards
+                CommunityCards: dc.cards,
               },
               { new: true })
             updateDom = true
           }
           console.log("Round1")
           break;
+
+
         case "Round2":
           if (hc.table.CommunityCards.length == 3) {
             let dc = await cardsService.drawFromDeck(hc.table.Deck, 1)
@@ -270,9 +263,12 @@ class SocketService {
                 CommunityCards: plusCard
               },
               { new: true })
+            updateDom = true
           }
           console.log("Round2")
           break;
+
+
         case "Round3":
           if (hc.table.CommunityCards.length == 4) {
             let dc = await cardsService.drawFromDeck(hc.table.Deck, 1)
@@ -285,9 +281,12 @@ class SocketService {
                 CommunityCards: plusCard
               },
               { new: true })
+            updateDom = true
           }
           console.log("Round3")
           break;
+
+
         case "End":
           //
           console.log("End")
@@ -295,6 +294,7 @@ class SocketService {
       }
       if (updateDom) {
         this.io.emit("GetGame", hc.table._id)
+        hc.tasks.push({ action: "GetGame", payload: hc.table.id })
       }
       return hc
     } catch (error) {
@@ -302,7 +302,7 @@ class SocketService {
     }
   }
 
-  async executeTasks(task) {
+  async _executeTasks(task) {
     switch (task.action) {
       case "GetGame":
         this.io.emit("GetGame", task.payload)
@@ -312,6 +312,41 @@ class SocketService {
   async __playerLeft(data, socket) {
     try {
       this.io.emit("PlayerLeft", data.playerId)
+    } catch (error) {
+      console.error(error)
+    }
+  }
+
+  async _userChoice(choice) {
+    try {
+      state.recentActivity.push({
+        action: "GetGame",
+        payload: choice.Bet.TableId
+      })
+      //i is the index within the state that holds data about this table
+      let i = state.playersTurnCounter.findIndex(p => p.table._id == choice.Bet.TableId)
+
+      //.players is a list of player who have already taken a turn this round
+      //if type is "Raise", reset the list so everyone can take a turn on the new bet
+      //if everyone has bet this round, continue on to the next
+      if (choice.type == "Raise") {
+        state.playersTurnCounter[i].players = [choice.Bet.Seat]
+      } else if (choice.type != "Fold") {
+        state.playersTurnCounter[i].players.push(choice.Bet.Seat)
+      }
+
+      let table = await dbContext.TexasHoldEm.findById(state.playersTurnCounter[i].table.id).populate({
+        path: "Seats",
+        populate: {
+          path: "Bet"
+        }
+      })
+
+      if (table.PlayersInGame.length == state.playersTurnCounter[i].players.length) {
+        gameTickerService.handleRoundChange(table)
+
+        state.playersTurnCounter[i].players = []
+      }
     } catch (error) {
       console.error(error)
     }

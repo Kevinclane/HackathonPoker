@@ -15,7 +15,23 @@
 
       <div class="col-12">
         <div class="row">
-          <div class="col-10 offset-1 table super-center">
+          <div class="col-10 offset-1 table super-center flow-column">
+            <div class="row bet-row w-100">
+              <div class="col-12 d-flex justify-content-around">
+                <bet-display :bet="table.Seats[0].Bet" />
+                <bet-display :bet="table.Seats[1].Bet" />
+                <bet-display :bet="table.Seats[2].Bet" />
+              </div>
+            </div>
+            <div class="row bet-row w-100">
+              <div class="col-8 offset-2 d-flex justify-content-around">
+                <bundled-bet-display
+                  v-for="bet in table.Bets"
+                  :key="bet.id"
+                  :bet="bet"
+                />
+              </div>
+            </div>
             <div class="row">
               <div class="col-12 d-flex">
                 <img
@@ -65,6 +81,16 @@
                 <div v-else class="card-board dotted-border"></div>
               </div>
             </div>
+            <div class="row bet-row w-100">
+              <div class="col-12">Next Game in</div>
+            </div>
+            <div class="row bet-row w-100">
+              <div class="col-12 d-flex justify-content-around">
+                <bet-display :bet="table.Seats[3].Bet" />
+                <bet-display :bet="table.Seats[4].Bet" />
+                <bet-display :bet="table.Seats[5].Bet" />
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -85,6 +111,8 @@
 </template>
 
 <script>
+import BundledBetDisplay from "../components/BundledBetDisplay.vue";
+import BetDisplay from "../components/BetDisplay.vue";
 import Seat from "../components/Seat.vue";
 export default {
   name: "TexasHoldEmTable",
@@ -106,6 +134,8 @@ export default {
   methods: {},
   components: {
     Seat,
+    BetDisplay,
+    BundledBetDisplay,
   },
 };
 </script>
@@ -142,5 +172,11 @@ export default {
 
 .dotted-border {
   border: 2px dotted white;
+}
+
+.bet-row {
+  height: 5vh;
+  margin-top: 2.5vh;
+  margin-bottom: 2.5vh;
 }
 </style>

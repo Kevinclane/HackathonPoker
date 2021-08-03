@@ -12,7 +12,8 @@ export default new Vuex.Store({
   state: {
     user: {},
     tables: [],
-    activeTable: {}
+    activeTable: {},
+    highestBet: 0
   },
   mutations: {
     setUser(state, user) {
@@ -26,16 +27,10 @@ export default new Vuex.Store({
     },
     setSeats(state, seats) {
       state.activeTable.Seats = seats
-      let i = 0
-      while (i < seats.length) {
-        if (seats[i].Player) {
-          if (seats[i].Player.Cards.length > 0) {
-            state.hand = seats[i].Player.Cards
-          }
-        }
-        i++
-      }
     },
+    setHighestBet(state, highestBet) {
+      state.highestBet = highestBet
+    }
   },
   actions: {
     setBearer({ }, bearer) {
@@ -58,6 +53,19 @@ export default new Vuex.Store({
       }
     },
 
+    async uploadProfilePicture({ commit }, img) {
+      try {
+        let apiObj = {
+          img: img
+        }
+        let res = await api.put("/profile/pic", apiObj)
+        debugger
+        commit("setUser", res.data)
+      } catch (error) {
+        console.error(error)
+      }
+    },
+
 
     //#endregion ProfileStuff
 
@@ -75,6 +83,7 @@ export default new Vuex.Store({
     async joinTable({ commit, dispatch }, tableId) {
       try {
         let res = await api.put("/texasholdem/jointable/" + tableId)
+        dispatch("findHighestBet", res.data.Seats)
         commit("setActiveTable", res.data)
       } catch (error) {
         console.error(error)
@@ -108,9 +117,10 @@ export default new Vuex.Store({
         console.error(error)
       }
     },
-    async getSeats({ commit }, id) {
+    async getSeats({ commit, dispatch }, id) {
       try {
         let res = await api.get("/texasholdem/getseats/" + id)
+        dispatch("findHighestBet", res.data)
         commit("setSeats", res.data)
       } catch (error) {
         console.error(error)
@@ -118,25 +128,36 @@ export default new Vuex.Store({
     },
     async submitUserChoice({ }, choice) {
       try {
-        let res = await api.post("/texasholdem/userchoice/" + choice.tableId, choice)
-        debugger
+        choice.Bet.Escrow = parseInt(choice.Bet.Escrow)
+        let res = await api.post("/texasholdem/userchoice/" + choice.Bet.TableId, choice)
         socket.emit("texasholdem", {
           action: "userChoice", body: choice
         })
-        //emit to add this to recentActivity in socketservice
       } catch (error) {
         console.error(error)
       }
     },
     //#endregion TxTables
 
-    async deleteTable({ commit }, id) {
+    async deleteTable({ }, id) {
       try {
         let res = await api.delete("texasholdem/" + id)
         console.log(res.data)
       } catch (error) {
         console.error(error)
       }
+    },
+
+    findHighestBet({ commit }, seats) {
+      let i = 0
+      let highestBet = 0
+      while (i < seats.length) {
+        if (seats[i].Bet.Escrow > highestBet) {
+          highestBet = seats[i].Bet.Escrow
+        }
+        i++
+      }
+      commit("setHighestBet", highestBet)
     },
 
 

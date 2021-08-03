@@ -2,20 +2,37 @@
   <div v-if="seat.Player" class="text-white row">
     <!-- REGION HEAD -->
 
-    <div class="col-12">
-      <div v-if="mySeat && myTurn" class="d-flex">
+    <div class="col-12 mb-1">
+      <div v-if="mySeat && myTurn" class="d-flex justify-content-around">
         <div>
-          <button class="btn btn-sm btn-success" @click="userChoice('Raise')">
+          <button v-if="myBet == 0" class="btn btn-sm btn-success" disabled>
             Raise
           </button>
-          <input class="w-sm ml-2" type="number" min="0" v-model="betAmount" />
+          <button
+            v-else
+            class="btn btn-sm btn-success"
+            @click="userChoice('Raise')"
+          >
+            Raise
+          </button>
+          <input class="w-sm ml-2" type="number" :min="0" v-model="myBet" />
         </div>
+
         <button
+          v-if="seat.Bet.Escrow == highestBet"
           class="btn btn-sm btn-info mx-2 h-50"
-          @click="userChoice('Call/Pass')"
+          @click="userChoice('Pass')"
         >
-          Call/Pass
+          Pass
         </button>
+        <button
+          v-else
+          class="btn btn-sm btn-info mx-2 h-50"
+          @click="userChoice('Call')"
+        >
+          Call ({{ callDifference }})
+        </button>
+
         <button class="btn btn-sm btn-danger h-50" @click="userChoice('Fold')">
           Fold
         </button>
@@ -27,14 +44,21 @@
 
     <!-- REGION PICTURE -->
 
-    <div class="col-4 text-center">
-      <div :class="{ goldBorder: myTurn }">
+    <div class="col-4 text-center mt-1">
+      <div class="super-center" :class="{ cwSpin: myTurn }">
         <img
+          :class="{ ccwSpin: myTurn }"
           class="profile-img"
           :src="`${seat.Player.Player.picture}`"
           alt="error loading image"
         />
       </div>
+      <i
+        v-if="mySeat"
+        class="fa fa-edit edit-button"
+        @click="toggleShowEditPhoto()"
+      ></i>
+      <input v-if="showEditPhoto" type="file" @change="uploadPhoto" />
       <div>${{ seat.Player.Wallet }}</div>
     </div>
 
@@ -94,8 +118,13 @@ export default {
   props: ["seat", "BuyIn"],
   data() {
     return {
-      betAmount: 0,
+      prevBetAmount: 0,
+      myBet: 0,
+      showEditPhoto: false,
     };
+  },
+  mounted() {
+    this.prevBetAmount = this.seat.Bet.Escrow;
   },
   computed: {
     mySeat() {
@@ -117,8 +146,11 @@ export default {
         return true;
       } else return false;
     },
-    groupNumber() {
-      return 1;
+    highestBet() {
+      return this.$store.state.highestBet;
+    },
+    callDifference() {
+      return this.$store.state.highestBet - this.seat.Bet.Escrow;
     },
   },
   methods: {
@@ -140,15 +172,49 @@ export default {
       });
     },
     userChoice(type) {
-      //add checker to betAmount to make sure it's not smaller than current bet
+      if (type == "Call") {
+        this.myBet = this.highestBet - this.seat.Bet.Escrow;
+        this.seat.Bet.Escrow = this.highestBet;
+      } else if (type == "Raise") {
+        this.seat.Bet.Escrow += parseInt(this.myBet) + this.highestBet;
+      }
       let choice = {
         type: type,
-        amount: this.betAmount,
-        tableId: this.$store.state.activeTable._id,
-        groupNumber: this.groupNumber,
-        playerId: this.$store.state.user._id,
+        newBet: this.myBet,
+        Bet: this.seat.Bet,
       };
       this.$store.dispatch("submitUserChoice", choice);
+      this.myBet = 0;
+    },
+    toggleShowEditPhoto() {
+      this.showEditPhoto = !this.showEditPhoto;
+    },
+    async uploadPhoto(event) {
+      await this.fileToDataURL(event, this.dispatchPic);
+    },
+    dispatchPic(img) {
+      this.$store.dispatch("uploadProfilePicture", img);
+      this.toggleShowEditPhoto();
+    },
+    fileToDataURL(event, dispatchPic) {
+      if (
+        event.target.files[0]["type"] === "image/jpeg" ||
+        event.target.files[0]["type"] === "image/png"
+      ) {
+        const reader = new FileReader();
+        reader.addEventListener(
+          "load",
+          function () {
+            dispatchPic(reader.result);
+          },
+          false
+        );
+        reader.readAsDataURL(event.target.files[0]);
+      } else {
+        swal({
+          text: "Selected file must be .jpeg or .png",
+        });
+      }
     },
   },
 };
@@ -169,38 +235,58 @@ export default {
 .w-sm {
   width: 4rem;
 }
-.goldBorder {
+.turnBorder {
   height: 8.5vh;
   width: 8.5vh;
   border-radius: 50%;
-  box-shadow: gold;
-  background-color: gold;
+  box-shadow: green;
+  background-color: green;
   display: flex;
   justify-content: center;
   align-items: center;
 }
-/* .goldBorder {
+.edit-button {
   position: absolute;
-  display: block;
-  top: -50%;
-  left: -50%;
-  z-index: -9;
-  display: block;
-  height: 200%;
-  width: 200%;
-  transform: rotate(-45deg);
-  overflow: hidden;
-  background: linear-gradient(
-    to right,
-    #fff 20%,
-    #fff 40%,
-    #ecd08c 50%,
-    #ecd08c 55%,
-    #fff 70%,
-    #fff 100%
-  );
-  background-size: 200% auto;
+  right: 8vh;
+  top: 7vh;
+}
 
-  animation: shine 3s linear infinite;
-} */
+.cwSpin {
+  animation-name: spin;
+  animation-duration: 5000ms;
+  animation-iteration-count: infinite;
+  animation-timing-function: linear;
+  background-image: url("../assets/TurnBorder.png");
+  border-radius: 50%;
+  height: 9.5vh;
+  width: 9.5vh;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.ccwSpin {
+  animation-name: invertSpin;
+  animation-duration: 5000ms;
+  animation-iteration-count: infinite;
+  animation-timing-function: linear;
+}
+
+@keyframes invertSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(-360deg);
+  }
+}
 </style>

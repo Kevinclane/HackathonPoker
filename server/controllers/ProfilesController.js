@@ -8,7 +8,8 @@ export class ProfilesController extends BaseController {
     this.router
       .use(auth0provider.getAuthorizedUserInfo)
       .get("", this.getUserProfile)
-      .put("/:id", this.edit);
+      .put("/pic", this.editPic)
+      .put("/:id", this.edit)
   }
   async getUserProfile(req, res, next) {
     try {
@@ -24,6 +25,14 @@ export class ProfilesController extends BaseController {
       res.send(req.body);
     } catch (error) {
       next(error);
+    }
+  }
+  async editPic(req, res, next) {
+    try {
+      let profile = await profilesService.updatePic(req.body.img, req.userInfo)
+      res.send(profile)
+    } catch (error) {
+      next(error)
     }
   }
 }
