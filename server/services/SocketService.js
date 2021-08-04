@@ -54,8 +54,10 @@ class SocketService {
    * @param {SocketIO.Socket} socket
    * @param {string} room
    */
-  LeaveRoom(socket, room) {
-    socket.leave(room);
+  async LeaveRoom(socket, idObj) {
+    await texasHoldEmService.leaveTable(idObj.tableId, idObj.userId)
+    this.io.emit("GetGame", idObj.tableId)
+    socket.leave(idObj.tableId);
   }
   /**
    * Sends a direct message to a user
@@ -339,15 +341,6 @@ class SocketService {
         this.io.emit("GetGame", task.payload)
     }
   }
-
-  async __playerLeft(data, socket) {
-    try {
-      this.io.emit("PlayerLeft", data.playerId)
-    } catch (error) {
-      console.error(error)
-    }
-  }
-
   async _userChoice(choice) {
     try {
       state.recentActivity.push({

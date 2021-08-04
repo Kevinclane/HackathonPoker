@@ -123,8 +123,8 @@ class TexasHoldEmService {
     return table
   }
 
-  async leaveTable(tableId, user) {
-    let profile = await dbContext.Profile.findOne({ email: user.email })
+  async leaveTable(tableId, userId) {
+    let profile = await dbContext.Profile.findById(userId)
     let table = await dbContext.TexasHoldEm.findById(tableId).populate({
       path: "Seats",
       populate: {
@@ -134,21 +134,51 @@ class TexasHoldEmService {
         }
       }
     }).populate("Bets")
-    //TODO handle money stuff here after leaving 
-    let i = table.Seats.findIndex(s => s.Player.Player._id == profile._id)
-    if (i != -1) {
-      await dbContext.Seat.findByIdAndUpdate(table.Seats[i]._id,
+
+    let i = 0
+    let seatFound = null
+    while (i < table.Seats.length) {
+      if (table.Seats[i].Player) {
+        if (table.Seats[i].Player.Player.id == profile._id) {
+          seatFound = table.Seats[i]
+        }
+      }
+      i++
+    }
+
+    if (seatFound) {
+      let newCredits = profile.credits + seatFound.Player.Wallet
+      await dbContext.Profile.findByIdAndUpdate(profile._id,
+        { credits: newCredits })
+
+      if (seatFound.Status == "Turn") {
+        await this.changePlayerTurn(seatFound)
+      }
+
+      await dbContext.PlayerTableData.findByIdAndUpdate(seatFound.Player._id,
+        {
+          Player: null,
+          Wallet: 0,
+          Winner: false
+        })
+
+      await dbContext.Seat.findByIdAndUpdate(seatFound._id,
         { Player: null }
       )
-    }
-    if (table.PlayersWatching.includes(profile._id)) {
+
+      await dbContext.TexasHoldEm.findByIdAndUpdate(tableId,
+        { $pull: { PlayersAtTable: profile._id } })
+
+      if (table.PlayersInGame.includes(profile._id)) {
+        await dbContext.TexasHoldEm.findByIdAndUpdate(tableId,
+          { $pull: { PlayersInGame: profile._id } })
+      }
+
+    } else if (table.PlayersWatching.includes(profile._id)) {
       await dbContext.TexasHoldEm.findByIdAndUpdate(tableId,
         { $pull: { PlayersWatching: profile._id } })
     }
-    if (table.PlayersAtTable.includes(profile._id)) {
-      await dbContext.TexasHoldEm.findByIdAndUpdate(tableId,
-        { $pull: { PlayersAtTable: profile._id } })
-    }
+
     return true
   }
 
@@ -265,16 +295,19 @@ class TexasHoldEmService {
     } else if (choice.type == "Fold") {
 
 
-      let seat = await dbContext.Seat.findOneAndUpdate({
-        TableId: choice.tableId,
-        Player: PTD.id,
-        Status: "Folded"
-      })
+      let seat = await dbContext.Seat.findOneAndUpdate(
+        {
+          TableId: choice.tableId,
+          Player: PTD.id
+        },
+        {
+          Status: "Folded"
+        })
+
+      await this.changePlayerTurn(seat)
 
       await dbContext.TexasHoldEm.findByIdAndUpdate(choice.Bet.TableId,
         { $pull: { PlayersInGame: profile.id } })
-
-      await this.changePlayerTurn(seat)
     }
     return "Successfully taken turn"
   }

@@ -146,6 +146,8 @@ export default {
       if (this.seat.Player) {
         if (this.seat.Player.Cards.length != 0) {
           return true;
+        } else if (!this.mySeat) {
+          return true;
         }
       } else return false;
     },

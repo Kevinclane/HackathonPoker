@@ -125,8 +125,15 @@ export default {
     await this.$store.dispatch("initializeSocket");
     await this.$store.dispatch("joinRoom", this.$route.params.tableId);
   },
-  beforeDestroy() {
-    this.$store.dispatch("leaveRoom", this.table._id);
+  async beforeDestroy() {
+    // await this.$store.dispatch("leaveTable", {
+    //   tableId: this.table._id,
+    //   userId: this.$store.state.user._id,
+    // });
+    await this.$store.dispatch("leaveRoom", {
+      tableId: this.table._id,
+      userId: this.$store.state.user._id,
+    });
   },
   computed: {
     table() {

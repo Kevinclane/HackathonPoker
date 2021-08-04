@@ -154,8 +154,6 @@ export default new Vuex.Store({
         console.error(error)
       }
     },
-    //#endregion TxTables
-
     async deleteTable({ }, id) {
       try {
         let res = await api.delete("texasholdem/" + id)
@@ -164,6 +162,15 @@ export default new Vuex.Store({
         console.error(error)
       }
     },
+    async leaveTable({ commit }, idObj) {
+      try {
+        await api.put("/texasholdem/leavetable/" + idObj.tableId, idObj)
+      } catch (error) {
+        console.error(error)
+      }
+    },
+    //#endregion TxTables
+
 
     findHighestBet({ commit }, seats) {
       let i = 0
@@ -176,6 +183,7 @@ export default new Vuex.Store({
       }
       commit("setHighestBet", highestBet)
     },
+
 
 
     initializeSocket({ commit, dispatch }) {
@@ -203,8 +211,8 @@ export default new Vuex.Store({
       socket.emit("dispatch", { action: "JoinRoom", data: roomName });
       dispatch("joinTable", roomName)
     },
-    leaveRoom({ commit, dispatch }, roomName) {
-      socket.emit("dispatch", { action: "LeaveRoom", data: roomName });
+    leaveRoom({ commit, dispatch }, idObj) {
+      socket.emit("dispatch", { action: "LeaveRoom", data: idObj });
       dispatch("leaveTable", roomName)
     },
   }
