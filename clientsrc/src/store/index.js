@@ -66,6 +66,23 @@ export default new Vuex.Store({
       }
     },
 
+    async changeName({ commit }, profile) {
+      try {
+        let res = await api.put("/profile/changename", profile)
+        commit("setUser", res.data)
+      } catch (error) {
+        console.error(error)
+      }
+    },
+    async changeCardBack({ commit }, obj) {
+      try {
+        let res = await api.put("/profile/changecardback", obj)
+        commit("setUser", res.data)
+      } catch (error) {
+        console.error(error)
+      }
+    },
+
 
     //#endregion ProfileStuff
 

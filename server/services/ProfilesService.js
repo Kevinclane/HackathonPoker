@@ -62,6 +62,18 @@ class ProfileService {
     );
     return profile;
   }
+  async changeName(profile, user) {
+    let update = await dbContext.Profile.findOneAndUpdate({ email: user.email },
+      { name: profile.name },
+      { new: true })
+    return update
+  }
+  async changeCardBack(obj, user) {
+    let profile = await dbContext.Profile.findOneAndUpdate({ email: user.email },
+      { cardBack: obj.card },
+      { new: true })
+    return profile
+  }
   async updatePic(pic, user) {
     let profile = await dbContext.Profile.findOneAndUpdate({ email: user.email },
       { picture: pic },

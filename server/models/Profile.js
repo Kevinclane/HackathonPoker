@@ -7,7 +7,8 @@ const Profile = new Schema(
     email: { type: String, lowercase: true, unique: true },
     name: { type: String, required: true },
     picture: { type: String },
-    credits: { type: Number, default: 10000 }
+    credits: { type: Number, default: 10000 },
+    cardBack: { type: String, default: "red_back.png" }
   },
   { timestamps: true, toJSON: { virtuals: true } }
 );

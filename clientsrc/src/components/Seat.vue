@@ -72,22 +72,7 @@
     <!-- REGION CARDS -->
 
     <div
-      v-if="mySeat && hasCards"
-      class="col-8 align-items-end justify-content-around d-flex"
-    >
-      <img
-        class="card-board"
-        :src="require('../assets/Cards/' + seat.Player.Cards[0].Img)"
-        alt="error loading image"
-      />
-      <img
-        class="card-board"
-        :src="require('../assets/Cards/' + seat.Player.Cards[1].Img)"
-        alt="error loading image"
-      />
-    </div>
-    <div
-      v-else-if="seat.Player.Winner"
+      v-if="showCards && hasCards"
       class="col-8 align-items-end justify-content-around d-flex"
     >
       <img
@@ -105,14 +90,14 @@
       <div v-if="hasCards">
         <img
           class="card-hand"
-          src="../assets/Backs/red_back.png"
+          :src="require('../assets/Backs/' + cardBack)"
           alt="error loading image"
         />
       </div>
       <div v-if="hasCards">
         <img
           class="card-hand"
-          src="../assets/Backs/red_back.png"
+          :src="require('../assets/Backs/' + cardBack)"
           alt="error loading image"
         />
       </div>
@@ -158,9 +143,10 @@ export default {
       }
     },
     hasCards() {
-      let LS = this.$store.state.activeTable.LifeStage;
-      if (LS != "End" && LS != "Start") {
-        return true;
+      if (this.seat.Player) {
+        if (this.seat.Player.Cards.length != 0) {
+          return true;
+        }
       } else return false;
     },
     myTurn() {
@@ -173,6 +159,14 @@ export default {
     },
     callDifference() {
       return this.$store.state.highestBet - this.seat.Bet.Escrow;
+    },
+    showCards() {
+      if (this.mySeat || this.seat.Player.Winner) {
+        return true;
+      } else return false;
+    },
+    cardBack() {
+      return this.$store.state.user.cardBack;
     },
   },
   methods: {

@@ -6,8 +6,6 @@ import { cardsService } from "./CardsService";
 import { dbContext } from "../db/DbContext";
 import moment from "moment"
 
-var Hand = require('pokersolver').Hand;
-
 let state = {}
 class SocketService {
   io = SocketIO();

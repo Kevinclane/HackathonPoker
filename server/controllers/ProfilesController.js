@@ -8,6 +8,8 @@ export class ProfilesController extends BaseController {
     this.router
       .use(auth0provider.getAuthorizedUserInfo)
       .get("", this.getUserProfile)
+      .put("/changename", this.changeName)
+      .put("/changecardback", this.changeCardBack)
       .put("/pic", this.editPic)
       .put("/:id", this.edit)
   }
@@ -25,6 +27,22 @@ export class ProfilesController extends BaseController {
       res.send(req.body);
     } catch (error) {
       next(error);
+    }
+  }
+  async changeName(req, res, next) {
+    try {
+      let profile = await profilesService.changeName(req.body, req.userInfo)
+      res.send(profile)
+    } catch (error) {
+      next(error)
+    }
+  }
+  async changeCardBack(req, res, next) {
+    try {
+      let profile = await profilesService.changeCardBack(req.body, req.userInfo)
+      res.send(profile)
+    } catch (error) {
+      next(error)
     }
   }
   async editPic(req, res, next) {
