@@ -67,19 +67,13 @@ class CardsService {
         let data = await this.drawFromDeck(table.Deck, 2)
         table.Deck = data.Deck
 
-        let ptd = await dbContext.PlayerTableData.findById(table.Seats[i].Player)
-
-        ptd = await dbContext.PlayerTableData.findById(table.Seats[i].Player.id)
-
-        ptd = await dbContext.PlayerTableData.findById(table.Seats[i].Player._id)
-
-
         await dbContext.PlayerTableData.findByIdAndUpdate(table.Seats[i].Player._id,
           { Cards: data.cards })
       }
       i++
     }
-    table = await dbContext.TexasHoldEm.findByIdAndUpdate(table._id, table)
+    return table
+    // table = await dbContext.TexasHoldEm.findByIdAndUpdate(table._id, table)
   }
 
 }

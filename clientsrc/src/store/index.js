@@ -13,8 +13,7 @@ export default new Vuex.Store({
     user: {},
     tables: [],
     activeTable: {},
-    highestBet: 0,
-    winners: []
+    highestBet: 0
   },
   mutations: {
     setUser(state, user) {
@@ -31,12 +30,6 @@ export default new Vuex.Store({
     },
     setHighestBet(state, highestBet) {
       state.highestBet = highestBet
-    },
-    displayWinner(state, winners) {
-      state.winners = winners
-    },
-    resetWinner(state) {
-      state.winners = []
     }
   },
   actions: {
@@ -167,11 +160,6 @@ export default new Vuex.Store({
       commit("setHighestBet", highestBet)
     },
 
-    displayWinner({ commit }, table) {
-      commit("displayWinner", table)
-    },
-
-
 
     initializeSocket({ commit, dispatch }) {
       //establish connection with socket
@@ -179,7 +167,6 @@ export default new Vuex.Store({
         ? "http://localhost:3000/"
         : "/";
       socket = io(baseUrl);
-      //Handle any on connection events
       socket.on("CONNECTED", (data) => {
         console.log(data.message)
       });
@@ -189,12 +176,8 @@ export default new Vuex.Store({
       socket.on("GetGame", (tableId) => {
         dispatch("joinTable", tableId)
       })
-      socket.on("Winner", (winners) => {
-        console.log("Winners: ", winners)
-        dispatch("displayWinner", winners)
-        setTimeout(() => {
-          commit("resetWinner")
-        }, 10000)
+      socket.on("SetGame", (table) => {
+        commit("setActiveTable", table)
       })
 
     },

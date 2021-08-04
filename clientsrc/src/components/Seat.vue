@@ -3,7 +3,10 @@
     <!-- REGION HEAD -->
 
     <div class="col-12 mb-1">
-      <div v-if="mySeat && myTurn" class="d-flex justify-content-around">
+      <div
+        v-if="mySeat && myTurn && !chosen"
+        class="d-flex justify-content-around"
+      >
         <div>
           <button v-if="myBet == 0" class="btn btn-sm btn-success" disabled>
             Raise
@@ -46,7 +49,9 @@
 
     <div class="col-4 text-center mt-1">
       <div class="super-center" :class="{ cwSpin: myTurn }">
+        <input v-if="showEditPhoto" type="file" @change="uploadPhoto" />
         <img
+          v-else
           :class="{ ccwSpin: myTurn }"
           class="profile-img"
           :src="`${seat.Player.Player.picture}`"
@@ -58,8 +63,8 @@
         class="fa fa-edit edit-button"
         @click="toggleShowEditPhoto()"
       ></i>
-      <input v-if="showEditPhoto" type="file" @change="uploadPhoto" />
-      <div>${{ seat.Player.Wallet }}</div>
+      <div v-if="seat.Player.Winner">WINNER!</div>
+      <div v-else>${{ seat.Player.Wallet }}</div>
     </div>
 
     <!-- END REGION PICTURE -->
@@ -68,6 +73,21 @@
 
     <div
       v-if="mySeat && hasCards"
+      class="col-8 align-items-end justify-content-around d-flex"
+    >
+      <img
+        class="card-board"
+        :src="require('../assets/Cards/' + seat.Player.Cards[0].Img)"
+        alt="error loading image"
+      />
+      <img
+        class="card-board"
+        :src="require('../assets/Cards/' + seat.Player.Cards[1].Img)"
+        alt="error loading image"
+      />
+    </div>
+    <div
+      v-else-if="seat.Player.Winner"
       class="col-8 align-items-end justify-content-around d-flex"
     >
       <img
@@ -121,6 +141,7 @@ export default {
       prevBetAmount: 0,
       myBet: 0,
       showEditPhoto: false,
+      chosen: false,
     };
   },
   mounted() {
@@ -137,7 +158,8 @@ export default {
       }
     },
     hasCards() {
-      if (this.$store.state.activeTable.PlayersTurn) {
+      let LS = this.$store.state.activeTable.LifeStage;
+      if (LS != "End" && LS != "Start") {
         return true;
       } else return false;
     },
@@ -151,11 +173,6 @@ export default {
     },
     callDifference() {
       return this.$store.state.highestBet - this.seat.Bet.Escrow;
-    },
-    winner() {
-      if (this.$store.state.winners.includes(this.seat.Player._id)) {
-        return true;
-      } else return false;
     },
   },
   methods: {
@@ -171,12 +188,14 @@ export default {
             tableId: this.$route.params.tableId,
             position: this.seat.Position,
             buyIn: this.BuyIn,
+            seatId: this.seat._id,
           };
           this.$store.dispatch("sit", reqObj);
         }
       });
     },
     userChoice(type) {
+      this.chosen = true;
       if (type == "Call") {
         this.myBet = this.highestBet - this.seat.Bet.Escrow;
         this.seat.Bet.Escrow = this.highestBet;
@@ -190,6 +209,9 @@ export default {
       };
       this.$store.dispatch("submitUserChoice", choice);
       this.myBet = 0;
+      setTimeout(() => {
+        this.chosen = false;
+      }, 5000);
     },
     toggleShowEditPhoto() {
       this.showEditPhoto = !this.showEditPhoto;

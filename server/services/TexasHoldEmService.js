@@ -168,10 +168,7 @@ class TexasHoldEmService {
     await dbContext.Profile.findByIdAndUpdate(profile.id,
       { credits: newCredits })
 
-    let seat = await dbContext.Seat.findOne({
-      TableId: tableId,
-      Position: data.position
-    }).populate("Player").populate("Bet")
+    let seat = await dbContext.Seat.findById(data.seatId).populate("Player").populate("Bet")
     if (seat.Player == null) {
       await dbContext.Bet.findByIdAndUpdate(seat.Bet.id,
         { Player: profile.id })

@@ -52,10 +52,11 @@ class GameTickerService {
         break;
       case "Round3":
         await this.bundleBets(table)
+        await this.setNoTurn(table)
         newStage = "End"
         break;
       case "End":
-        table = await this.resetGame(table)
+        await this.resetGame(table)
         break;
     }
     if (newStage != "") {
@@ -88,14 +89,13 @@ class GameTickerService {
   }
 
   async setNextPlayer(table) {
-    let test = await dbContext.Seat.findOneAndUpdate(
+    await dbContext.Seat.findOneAndUpdate(
       {
         _id: table.PlayersInGame[0]._id,
         TableId: table.id
       },
       { Status: "Turn" },
       { new: true })
-    console.log(test)
   }
 
   async bundleBets(table) {
@@ -140,33 +140,27 @@ class GameTickerService {
 
       let totalWinnings = 0
 
-      i = 0
+      let i = 0
       while (i < table.Bets.length) {
         totalWinnings += table.Bets[i].Escrow
         await dbContext.BundledBet.findByIdAndDelete(table.Bets[i]._id)
         i++
       }
 
-      let i = 0
-      while (i < table.Seats.length) {
+      //shared winnings
+      totalWinnings = totalWinnings / table.Winner.length
 
-        await dbContext.Bet.findByIdAndUpdate(table.Seats[i].Bet,
-          { Escrow: 0 })
+      let winnerPTDs = await dbContext.PlayerTableData.find({
+        TableId: table._id,
+        Winner: true
+      })
 
-        await dbContext.PlayerTableData.findByIdAndUpdate(table.Seats[i].Player._id,
-          { Cards: [] })
-        //update playertabledata.cards
+      i = 0
+      while (i < winnerPTDs.length) {
+        let total = totalWinnings + winnerPTDs[i].Wallet
 
-        //if this fails, _id is not good to use on an object that was populated(>> <<)
-        await dbContext.Seat.findByIdAndUpdate(table.Seats[i]._id,
-          { Status: "Idle" })
-
-        if (table.Seats[i].Player == table.Winner) {
-          let total = totalWinnings + table.Seat[i].Player.Wallet
-          await dbContext.PlayerTableData.findByIdAndUpdate(table.Winner,
-            { Wallet: total })
-        }
-
+        await dbContext.PlayerTableData.findByIdAndUpdate(winnerPTDs[i]._id,
+          { Wallet: total })
         i++
       }
 
@@ -176,8 +170,21 @@ class GameTickerService {
           CommunityCards: [],
           Deck: [],
           PlayersTurn: null,
-          Winner: []
+          Winner: [],
+          LifeStage: "Start"
         })
+
+      await dbContext.BundledBet.deleteMany({ TableId: table._id })
+
+      await dbContext.PlayerTableData.updateMany({ TableId: table._id },
+        {
+          Cards: [],
+          Winner: false
+        })
+
+      await dbContext.Seat.updateMany({ TableId: table._id },
+        { Status: "Idle" })
+
 
       return table
     } catch (error) {
@@ -227,6 +234,8 @@ class GameTickerService {
       let index = bestHands.findIndex(h => h.hand.cards == winner[i].cards)
       if (index != -1) {
         winArr.push(bestHands[index].player)
+        await dbContext.PlayerTableData.findByIdAndUpdate(bestHands[index].player,
+          { Winner: true })
       }
       i++
     }
@@ -241,7 +250,10 @@ class GameTickerService {
       { new: true }).populate({
         path: "Seats",
         populate: {
-          path: "Player"
+          path: "Player",
+          populate: {
+            path: "Cards"
+          }
         }
       })
     return table
@@ -260,6 +272,17 @@ class GameTickerService {
       i++
     }
     return formedCards
+  }
+
+  async setNoTurn(table) {
+    try {
+      await dbContext.Seat.updateMany({ TableId: table._id },
+        { Status: "Idle" })
+      await dbContext.TexasHoldEm.findByIdAndUpdate(table._id,
+        { PlayersTurn: null })
+    } catch (error) {
+      console.log(error)
+    }
   }
 
 }

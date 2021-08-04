@@ -141,7 +141,6 @@ class SocketService {
     setInterval(() => {
       if (state.recentActivity.length > 0) {
         this._activityHandler()
-        state.recentActivity = []
       }
       this._healthChecker()
       console.log("Game ticker")
@@ -177,6 +176,7 @@ class SocketService {
       }
       i++
     }
+    state.recentActivity = []
   }
 
   //queries db for all tables and check the count of players at table 
@@ -211,17 +211,23 @@ class SocketService {
       let updateDom = false
       switch (hc.table.LifeStage) {
         case "Start":
+
+          if (hc.table.Active) {
+            hc.table.Deck = await cardsService.createDeck()
+            await dbContext.TexasHoldEm.findByIdAndUpdate(hc.table._id,
+              { Deck: hc.table.Deck })
+          }
+
           hc.table = await gameTickerService.getPlayersInGame(hc.table)
 
-          // await updateState(hc.table)
-
-          await cardsService.dealHands(hc.table);
-          // let timer = moment().add(30, "seconds")
+          hc.table = await cardsService.dealHands(hc.table);
 
           hc.table = await dbContext.TexasHoldEm.findByIdAndUpdate(hc.table.id,
             {
               LifeStage: "Round1",
               PlayersTurn: hc.table.PlayersInGame[0]._id,
+              Deck: hc.table.Deck,
+              Active: true
             },
             { new: true })
           await gameTickerService.setNextPlayer(hc.table)
@@ -281,9 +287,41 @@ class SocketService {
         case "End":
           if (hc.table.Winner.length == 0) {
             hc.table = await gameTickerService.calculateWinner(hc.table)
-            this.io.emit("Winner", hc.table.Winner)
+
+            hc.table = await hc.table.populate("Bets").execPopulate()
+
+            let i = 0
+            while (i < hc.table.Seats.length) {
+              if (hc.table.Seats[i].Player) {
+                hc.table.Seats[i].Player = await hc.table.Seats[i].Player.populate("Player").execPopulate()
+              }
+              i++
+            }
+
+            this.io.emit("SetGame", hc.table)
+
           } else if (moment().isAfter(moment(hc.table.Timer))) {
             await gameTickerService.handleRoundChange(hc.table)
+
+            let table = await dbContext.TexasHoldEm.findById(hc.table._id).populate({
+              path: "Seats",
+              populate: {
+                path: "Player",
+                populate: {
+                  path: "Cards"
+                }
+              }
+            }).populate("Bets")
+
+            let i = 0
+            while (i < table.Seats.length) {
+              if (table.Seats[i].Player) {
+                table.Seats[i].Player = await table.Seats[i].Player.populate("Player").execPopulate()
+              }
+              i++
+            }
+
+            this.io.emit("SetGame", table)
           }
           break;
       }

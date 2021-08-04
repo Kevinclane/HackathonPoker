@@ -133,14 +133,7 @@ export default {
       return this.$store.state.activeTable;
     },
     winners() {
-      return this.$store.state.winners;
-    },
-    winnerMessage() {
-      let i = 0;
-      let message = "Winner(s): ";
-      while (i < this.winners.length) {
-        message += this.winners[i].i++;
-      }
+      return this.$store.state.activeTable.Winner;
     },
   },
   methods: {},
