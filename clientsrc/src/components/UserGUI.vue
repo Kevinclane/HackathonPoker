@@ -14,12 +14,14 @@
         <i class="button-type fa fa-close" @click="toggleShowEditName()"></i>
       </div>
       <div class="col-1">$ {{ profile.credits }}</div>
-      <div class="col-4">
+      <div class="col-7 d-flex space-even" v-if="$auth.isAuthenticated">
         <button class="btn btn-info" @click="toggleShowCardBacks()">
           Change Card Backs
         </button>
+        <button class="btn btn-danger" @click="logout">Logout</button>
       </div>
-      <div class="col-4 text-right">
+      <div v-else class="col-7"></div>
+      <div class="col-1 text-right">
         <a href="https://github.com/Kevinclane/HackathonPoker" target="_blank">
           <i class="button-type fa fa-github mx-1" aria-hidden="true"></i>
         </a>
@@ -56,6 +58,7 @@
 </template>
 
 <script>
+import swal from "sweetalert";
 export default {
   name: "UserGUI",
   data() {
@@ -89,6 +92,9 @@ export default {
       };
       this.$store.dispatch("changeCardBack", obj);
       this.toggleShowCardBacks();
+    },
+    async logout() {
+      await this.$auth.logout({ returnTo: window.location.origin });
     },
   },
   computed: {
@@ -132,5 +138,8 @@ export default {
 }
 .height-holder {
   height: 2rem;
+}
+.space-even {
+  justify-content: space-evenly;
 }
 </style>

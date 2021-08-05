@@ -32,6 +32,9 @@
                 />
               </div>
             </div>
+
+            <!-- REGION COMMUNITY CARDS -->
+
             <div class="row">
               <div class="col-12 d-flex">
                 <img
@@ -81,9 +84,17 @@
                 <div v-else class="card-board dotted-border"></div>
               </div>
             </div>
+
+            <!-- END REGION COMMUNITY CARDS -->
+
             <div class="row bet-row w-100">
               <div class="col-12">
                 <div v-if="winners.length > 0">Next game starting soon...</div>
+                <div class="col-12">
+                  <button class="btn btn-warning" @click="promptGameBroken()">
+                    Game Broken
+                  </button>
+                </div>
               </div>
             </div>
             <div class="row bet-row w-100">
@@ -126,10 +137,6 @@ export default {
     await this.$store.dispatch("joinRoom", this.$route.params.tableId);
   },
   async beforeDestroy() {
-    // await this.$store.dispatch("leaveTable", {
-    //   tableId: this.table._id,
-    //   userId: this.$store.state.user._id,
-    // });
     await this.$store.dispatch("leaveRoom", {
       tableId: this.table._id,
       userId: this.$store.state.user._id,
@@ -143,7 +150,21 @@ export default {
       return this.$store.state.activeTable.Winner;
     },
   },
-  methods: {},
+  methods: {
+    promptGameBroken() {
+      swal({
+        title: `This game may encounter some unexpected bugs. Confirming will reset the games. The process should only take a minute or two at most.`,
+        text: "Continue?",
+        icon: "info",
+        buttons: ["Nevermind", "Reset"],
+      }).then((confirm) => {
+        if (confirm) {
+          this.$store.dispatch("hardReset", this.$route.params.tableId);
+          this.$router.push({ name: "dashboard" });
+        }
+      });
+    },
+  },
   components: {
     Seat,
     BetDisplay,
@@ -156,6 +177,7 @@ export default {
 .wrapper-main {
   height: 95vh;
   background-color: whitesmoke;
+  overflow-y: hidden;
 }
 .floor {
   background-image: url("../assets/Floor.jpg");

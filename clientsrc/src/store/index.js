@@ -184,6 +184,18 @@ export default new Vuex.Store({
       commit("setHighestBet", highestBet)
     },
 
+    async hardReset({ }, id) {
+      try {
+        socket.emit("texasholdem", {
+          action: "hardReset",
+          body: {
+            tableId: id
+          }
+        })
+      } catch (error) {
+        console.error(error)
+      }
+    },
 
 
     initializeSocket({ commit, dispatch }) {
@@ -204,6 +216,10 @@ export default new Vuex.Store({
       socket.on("SetGame", (table) => {
         commit("setActiveTable", table)
       })
+      socket.on("resetting", () => {
+        swal("Someone reset the game. Please wait for it to reload.");
+        router.push({ name: "dashboard" });
+      })
 
     },
 
@@ -213,7 +229,7 @@ export default new Vuex.Store({
     },
     leaveRoom({ commit, dispatch }, idObj) {
       socket.emit("dispatch", { action: "LeaveRoom", data: idObj });
-      dispatch("leaveTable", roomName)
+      // dispatch("leaveTable", roomName)
     },
   }
 })

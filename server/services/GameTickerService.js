@@ -1,6 +1,5 @@
-import { isValidObjectId } from "mongoose";
 import { dbContext } from "../db/DbContext";
-import { BadRequest } from "../utils/Errors";
+import { texasHoldEmService } from "./TexasHoldEmService";
 import moment from "moment"
 
 var Hand = require('pokersolver').Hand;
@@ -100,13 +99,13 @@ class GameTickerService {
 
   async bundleBets(table) {
     try {
-      let players = []
+      // let players = []
       let total = 0
       let i = 0
       while (i < table.Seats.length) {
-        if (table.Seats[i].Player) {
-          players.push(table.Seats[i].Player)
-        }
+        // if (table.Seats[i].Player) {
+        // players.push(table.Seats[i].Player)
+        // }
         total += table.Seats[i].Bet.Escrow
         await dbContext.Bet.findByIdAndUpdate(table.Seats[i].Bet._id,
           { Escrow: 0 })
@@ -116,7 +115,7 @@ class GameTickerService {
       let bundledBet = await dbContext.BundledBet.create({
         TableId: table._id,
         Escrow: total,
-        Players: players
+        // Players: players
       })
 
       await dbContext.TexasHoldEm.findByIdAndUpdate(table._id,
@@ -207,7 +206,7 @@ class GameTickerService {
     let i = 0
     while (i < table.Seats.length) {
 
-      if (table.Seats[i].Player) {
+      if (table.Seats[i].Player && table.Seats[i].Status != "Folded") {
 
         let cards = table.CommunityCards.concat(table.Seats[i].Player.Cards)
 
@@ -282,6 +281,51 @@ class GameTickerService {
         { PlayersTurn: null })
     } catch (error) {
       console.log(error)
+    }
+  }
+
+  async hardReset(id) {
+    await dbContext.Bet.deleteMany({ TableId: id })
+    await dbContext.Seat.deleteMany({ TableId: id })
+    await dbContext.PlayerTableData.deleteMany({ TableId: id })
+    await dbContext.TexasHoldEm.findByIdAndDelete(id)
+    await dbContext.BundledBet.deleteMany({ TableId: id })
+    await texasHoldEmService.createTable({
+      BuyIn: 100,
+      Number: 1
+    })
+  }
+
+  async defaultWin(table) {
+    try {
+      table = await table.populate({
+        path: "Seats",
+        populate: {
+          path: "Player",
+          populate: {
+            path: "Player"
+          }
+        }
+      }).execPopulate()
+
+      await this.bundleBets(table)
+
+      let PTD = await dbContext.PlayerTableData.findById(table.PlayersInGame[0])
+
+      let newWallet = PTD.Wallet
+
+      let i = 0
+      while (i < table.Bets.length) {
+        newWallet += table.Bets[i].Escrow
+        await dbContext.BundledBet.findByIdAndDelete(table.Bets[i]._id)
+        i++
+      }
+
+      await dbContext.PlayerTableData.findByIdAndUpdate(table.PlayersInGame[0],
+        { Wallet: newWallet })
+
+    } catch (error) {
+      console.error(error)
     }
   }
 

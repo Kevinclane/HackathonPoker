@@ -125,10 +125,13 @@ class SocketService {
         switch (req.action) {
           case "getSeats":
             this.io.emit("GetSeats", req.body.tableId)
-            break
+            break;
           case "userChoice":
             this._userChoice(req.body)
-            break
+            break;
+          case "hardReset":
+            this._hardReset(req.body.tableId)
+            break;
         }
       } catch (error) {
         console.error(error)
@@ -350,6 +353,13 @@ class SocketService {
       //i is the index within the state that holds data about this table
       let i = state.playersTurnCounter.findIndex(p => p.table._id == choice.Bet.TableId)
 
+      let table = await dbContext.TexasHoldEm.findById(state.playersTurnCounter[i].table.id).populate({
+        path: "Seats",
+        populate: {
+          path: "Bet"
+        }
+      })
+
       //.players is a list of player who have already taken a turn this round
       //if type is "Raise", reset the list so everyone can take a turn on the new bet
       //if everyone has bet this round, continue on to the next
@@ -359,18 +369,26 @@ class SocketService {
         state.playersTurnCounter[i].players.push(choice.Bet.Seat)
       }
 
-      let table = await dbContext.TexasHoldEm.findById(state.playersTurnCounter[i].table.id).populate({
-        path: "Seats",
-        populate: {
-          path: "Bet"
-        }
-      })
+
 
       if (table.PlayersInGame.length == state.playersTurnCounter[i].players.length) {
         gameTickerService.handleRoundChange(table)
 
         state.playersTurnCounter[i].players = []
+      } else if (table.PlayersInGame.length == 1) {
+        gameTickerService.defaultWin(table)
       }
+
+    } catch (error) {
+      console.error(error)
+    }
+  }
+
+  async _hardReset(id) {
+    try {
+      await gameTickerService.hardReset(id)
+      await this._setupState()
+      this.io.emit("resetting")
     } catch (error) {
       console.error(error)
     }

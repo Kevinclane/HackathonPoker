@@ -297,17 +297,18 @@ class TexasHoldEmService {
 
       let seat = await dbContext.Seat.findOneAndUpdate(
         {
-          TableId: choice.tableId,
+          TableId: choice.Bet.TableId,
           Player: PTD.id
         },
         {
           Status: "Folded"
         })
 
+      await dbContext.TexasHoldEm.findByIdAndUpdate(choice.Bet.TableId,
+        { $pull: { PlayersInGame: seat._id } })
+
       await this.changePlayerTurn(seat)
 
-      await dbContext.TexasHoldEm.findByIdAndUpdate(choice.Bet.TableId,
-        { $pull: { PlayersInGame: profile.id } })
     }
     return "Successfully taken turn"
   }

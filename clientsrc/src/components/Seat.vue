@@ -45,7 +45,7 @@
 
     <!-- END REGION HEAD -->
 
-    <!-- REGION PICTURE -->
+    <!-- REGION PICTURE / MONEY -->
 
     <div class="col-4 text-center mt-1">
       <div class="super-center" :class="{ cwSpin: myTurn }">
@@ -64,10 +64,11 @@
         @click="toggleShowEditPhoto()"
       ></i>
       <div v-if="seat.Player.Winner">WINNER!</div>
+      <div v-else-if="folded" class="text-red">FOLD</div>
       <div v-else>${{ seat.Player.Wallet }}</div>
     </div>
 
-    <!-- END REGION PICTURE -->
+    <!-- END REGION PICTURE / MONEY -->
 
     <!-- REGION CARDS -->
 
@@ -76,11 +77,13 @@
       class="col-8 align-items-end justify-content-around d-flex"
     >
       <img
+        :class="{ foldCard: folded }"
         class="card-board"
         :src="require('../assets/Cards/' + seat.Player.Cards[0].Img)"
         alt="error loading image"
       />
       <img
+        :class="{ foldCard: folded }"
         class="card-board"
         :src="require('../assets/Cards/' + seat.Player.Cards[1].Img)"
         alt="error loading image"
@@ -89,6 +92,7 @@
     <div v-else class="col-8 align-items-end justify-content-around d-flex">
       <div v-if="hasCards">
         <img
+          :class="{ foldCard: folded }"
           class="card-hand"
           :src="require('../assets/Backs/' + cardBack)"
           alt="error loading image"
@@ -96,6 +100,7 @@
       </div>
       <div v-if="hasCards">
         <img
+          :class="{ foldCard: folded }"
           class="card-hand"
           :src="require('../assets/Backs/' + cardBack)"
           alt="error loading image"
@@ -169,6 +174,11 @@ export default {
     },
     cardBack() {
       return this.$store.state.user.cardBack;
+    },
+    folded() {
+      if (this.seat.Status == "Folded") {
+        return true;
+      } else return false;
     },
   },
   methods: {
@@ -272,6 +282,9 @@ export default {
   position: absolute;
   right: 70%;
   top: 60%;
+}
+.foldCard {
+  filter: brightness(0.2);
 }
 
 .cwSpin {
