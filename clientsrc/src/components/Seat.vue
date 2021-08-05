@@ -206,7 +206,8 @@ export default {
         this.myBet = this.highestBet - this.seat.Bet.Escrow;
         this.seat.Bet.Escrow = this.highestBet;
       } else if (type == "Raise") {
-        this.seat.Bet.Escrow += parseInt(this.myBet) + this.highestBet;
+        this.myBet += this.highestBet
+        this.seat.Bet.Escrow = parseInt(this.myBet)
       }
       let choice = {
         type: type,
