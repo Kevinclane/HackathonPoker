@@ -308,21 +308,31 @@ class GameTickerService {
         }
       }).execPopulate()
 
-      await this.bundleBets(table)
+      let seat = await dbContext.Seat.findById(table.PlayersInGame[0]).populate("Player")
 
-      let PTD = await dbContext.PlayerTableData.findById(table.PlayersInGame[0])
+      await dbContext.PlayerTableData.findByIdAndUpdate(seat.Player._id,
+        {
+          Winner: true
+        })
 
-      let newWallet = PTD.Wallet
+      let expTime = moment().add(30, "seconds")
 
-      let i = 0
-      while (i < table.Bets.length) {
-        newWallet += table.Bets[i].Escrow
-        await dbContext.BundledBet.findByIdAndDelete(table.Bets[i]._id)
-        i++
-      }
+      table = await dbContext.TexasHoldEm.findByIdAndUpdate(table._id,
+        {
+          Timer: expTime,
+          Winner: [table.PlayersInGame[0].Player],
+          LifeStage: "End",
+        },
+        { new: true }).populate({
+          path: "Seats",
+          populate: {
+            path: "Player",
+            populate: {
+              path: "Cards"
+            }
+          }
+        })
 
-      await dbContext.PlayerTableData.findByIdAndUpdate(table.PlayersInGame[0],
-        { Wallet: newWallet })
 
     } catch (error) {
       console.error(error)

@@ -48,28 +48,28 @@ class TexasHoldEmService {
     }
     return tables
   }
-  async dealHands(tableId) {
-    let table = await dbContext.TexasHoldEm.findById(tableId).populate({
-      path: "Seats",
-      populate: {
-        path: "Player",
-        populate: {
-          path: "Player"
-        }
-      }
-    })
-    let i = 0
-    while (i < table.Seats.length) {
-      if (table.Seats[i].Player) {
-        let data = await cardsService.drawFromDeck(table.Deck, 2)
-        table.Deck = data.Deck
-        await dbContext.PlayerTableData.findByIdAndUpdate(table.Seats[i].Player._id,
-          { Cards: data.cards })
-      }
-      i++
-    }
-    table = await dbContext.TexasHoldEm.findByIdAndUpdate(table._id, table)
-  }
+  // async dealHands(tableId) {
+  //   let table = await dbContext.TexasHoldEm.findById(tableId).populate({
+  //     path: "Seats",
+  //     populate: {
+  //       path: "Player",
+  //       populate: {
+  //         path: "Player"
+  //       }
+  //     }
+  //   })
+  //   let i = 0
+  //   while (i < table.Seats.length) {
+  //     if (table.Seats[i].Player) {
+  //       let data = await cardsService.drawFromDeck(table.Deck, 2)
+  //       table.Deck = data.Deck
+  //       await dbContext.PlayerTableData.findByIdAndUpdate(table.Seats[i].Player._id,
+  //         { Cards: data.cards })
+  //     }
+  //     i++
+  //   }
+  //   table = await dbContext.TexasHoldEm.findByIdAndUpdate(table._id, table)
+  // }
 
   async joinTable(tableId, user) {
     let profile = await dbContext.Profile.findOne({ email: user.email })

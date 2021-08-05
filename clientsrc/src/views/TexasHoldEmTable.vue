@@ -92,7 +92,7 @@
                 <div v-if="winners.length > 0">Next game starting soon...</div>
                 <div class="col-12">
                   <button class="btn btn-warning" @click="promptGameBroken()">
-                    Game Broken
+                    Game Froze
                   </button>
                 </div>
               </div>

@@ -147,7 +147,7 @@ class SocketService {
       }
       this._healthChecker()
       console.log("Game ticker")
-    }, 1000)
+    }, 2000)
   }
   async _setupState() {
     let builtState = {
@@ -215,6 +215,9 @@ class SocketService {
       switch (hc.table.LifeStage) {
         case "Start":
 
+          await dbContext.TexasHoldEm.findByIdAndUpdate(hc.table._id,
+            { LifeStage: "Round1" })
+
           if (hc.table.Active) {
             hc.table.Deck = await cardsService.createDeck()
             await dbContext.TexasHoldEm.findByIdAndUpdate(hc.table._id,
@@ -227,7 +230,6 @@ class SocketService {
 
           hc.table = await dbContext.TexasHoldEm.findByIdAndUpdate(hc.table.id,
             {
-              LifeStage: "Round1",
               PlayersTurn: hc.table.PlayersInGame[0]._id,
               Deck: hc.table.Deck,
               Active: true
@@ -369,14 +371,12 @@ class SocketService {
         state.playersTurnCounter[i].players.push(choice.Bet.Seat)
       }
 
-
-
       if (table.PlayersInGame.length == state.playersTurnCounter[i].players.length) {
-        gameTickerService.handleRoundChange(table)
+        await gameTickerService.handleRoundChange(table)
 
         state.playersTurnCounter[i].players = []
       } else if (table.PlayersInGame.length == 1) {
-        gameTickerService.defaultWin(table)
+        await gameTickerService.defaultWin(table)
       }
 
     } catch (error) {
